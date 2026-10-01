@@ -1,1 +1,10 @@
-{"name":"Учёт средств измерений","short_name":"Учёт СИ","start_url":"./","display":"standalone","background_color":"#f3f5f7","theme_color":"#1565c0","lang":"ru"}
+{
+  "name": "Учёт средств измерения",
+  "short_name": "Учёт СИ",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f3f5f7",
+  "theme_color": "#1565c0",
+  "lang": "ru",
+  "description": "Учёт, поиск и QR-метки средств измерения"
+}
