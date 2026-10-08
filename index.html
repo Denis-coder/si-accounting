@@ -89,7 +89,7 @@
 <script src="https://cdn.jsdelivr.net/npm/docx@9.8.1/dist/index.iife.js"></script>
 <script>
 let wb=null,items=[],currentFileName='Перечень СИ.xlsx',visibleCount=300,scanner=null;
-const SHARED_DEFAULTS={owner:'Denis-coder',repo:'Uchet-si',branch:'main',path:'si-journal.json'};
+const SHARED_DEFAULTS={owner:'Denis-coder',repo:'si-accounting',branch:'main',path:'si-journal.json'};
 let shared={...SHARED_DEFAULTS,token:'',sha:'',loadedVersion:0,journal:null,dirty:false,autoTimer:null,login:'',user:null,pendingAudits:[]};
 let localUsers=[];
 function loadSharedSettings(){try{let s=JSON.parse(localStorage.getItem('siAccountingGithub')||'{}');shared={...shared,...s};}catch(e){}ghOwner.value=shared.owner;ghRepo.value=shared.repo;ghBranch.value=shared.branch;ghPath.value=shared.path;ghToken.value=shared.token||'';loadLocalUser();updateSharedUI()}

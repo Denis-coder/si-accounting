@@ -4,15 +4,15 @@
 Работникам GitHub-аккаунт не нужен.
 
 ## GitHub
-Репозиторий: `Denis-coder/Uchet-si`
+Репозиторий: `Denis-coder/si-accounting`
 Ветка: `main`
 Файл общей базы: `si-journal.json`
 
 ## Первый запуск
 1. Залить содержимое архива в корень репозитория.
 2. Открыть GitHub Pages.
-3. Нажать «Общая база» → «База» и указать `Denis-coder / Uchet-si / main / si-journal.json`.
-4. Создать Fine-grained token с доступом только к `Uchet-si` и `Contents: Read and write`.
+3. Нажать «Общая база» → «База» и указать `Denis-coder / si-accounting / main / si-journal.json`.
+4. Создать Fine-grained token с доступом только к `si-accounting` и `Contents: Read and write`.
 5. Вставить один токен бригады и сохранить.
 6. «Первый запуск» → создать администратора.
 7. Выбрать Excel.
