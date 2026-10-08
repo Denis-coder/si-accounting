@@ -32,11 +32,18 @@
 <div id="sharedBox" class="sharedBox">
   <h3>🌐 Общая база</h3>
   <div id="sharedStatus" class="sharedStatus">Общая база ещё не настроена.</div>
+  <div id="sharedUserStatus" class="subtle"></div>
   <div class="sharedActions">
     <button class="btn secondary" id="sharedLoadBtn">⬇️ Загрузить с сайта</button>
     <button class="btn green" id="sharedPublishBtn" disabled>⬆️ Опубликовать на сайт</button>
     <button class="btn secondary" id="sharedSettingsBtn">⚙️ Настроить</button><button class="btn secondary" id="sharedHistoryBtn">📜 История</button>
   </div>
+</div>
+<div class="tabs" style="display:flex;gap:7px;flex-wrap:wrap;margin:12px 0">
+<button class="btn" id="tabJournal">📋 Журнал</button>
+<button class="btn secondary" id="tabHistory">📜 История</button>
+<button class="btn secondary" id="tabBase">🌐 База</button>
+<button class="btn secondary hidden" id="tabPeople">👥 Люди</button>
 </div>
 <div id="loadInfo"></div>
 <div class="stats">
@@ -53,23 +60,28 @@
 
 <div id="sharedModal" class="modal hidden"><div>
 <button class="close" id="sharedClose">×</button>
-<h2>Настройки общей базы</h2>
-<div class="small">Чтение общей базы доступно всем. Для добавления, изменения и удаления СИ нужен ваш личный GitHub Fine-grained token с правом <b>Contents: Read and write</b> только для этого репозитория.</div>
+<h2>🌐 Общая база</h2>
+<div class="small">Общая база хранится прямо в <b>si-journal.json</b> репозитория GitHub. Работникам GitHub-аккаунт не нужен. Один токен бригады используется только для чтения/записи файла.</div>
 <div class="sharedPanel" style="margin-top:12px">
-<label>Владелец репозитория<input id="ghOwner" value="Denis-coder"></label>
-<label>Репозиторий<input id="ghRepo" value="si-accounting"></label>
+<label>Владелец<input id="ghOwner" value="Denis-coder"></label>
+<label>Репозиторий<input id="ghRepo" value="Uchet-si"></label>
 <label>Ветка<input id="ghBranch" value="main"></label>
 <label>Файл общей базы<input id="ghPath" value="si-journal.json"></label>
-<label>Ваш GitHub token<input id="ghToken" class="tokenInput" type="password" autocomplete="off" placeholder="github_pat_..."></label>
+<label>Токен бригады<input id="ghToken" class="tokenInput" type="password" autocomplete="off" placeholder="github_pat_..."></label>
 </div>
-<div class="small" style="margin-top:10px">Токен хранится только в этом браузере и не записывается в GitHub. Не передавайте его другим людям.</div>
+<div class="small" style="margin-top:10px">Токен сохраняется только в браузере этого устройства. Не вставляйте его в сам журнал и не публикуйте в GitHub.</div>
 <div class="actions">
-<button class="btn green" id="sharedSaveSettings">Сохранить настройки</button>
-<button class="btn secondary" id="sharedTestToken">Проверить token</button>
-<button class="btn danger" id="sharedForgetToken">Удалить token с этого устройства</button>
+<button class="btn green" id="sharedSaveSettings">💾 Сохранить</button>
+<button class="btn secondary" id="sharedTestToken">🔎 Проверить</button>
+<button class="btn danger" id="sharedForgetToken">Удалить токен</button>
 </div>
-<div id="sharedSettingsInfo" class="small"></div><div id="sharedHistory" class="sheetNote hidden"></div>
+<div id="sharedSettingsInfo" class="small"></div>
 </div></div>
+
+<div id="loginModal" class="modal hidden"><div><button class="close" id="loginClose">×</button><h2>🔐 Вход</h2><div class="adminForm"><label>Логин<input id="loginName" autocomplete="username"></label><label>Пароль<input id="loginPassword" type="password" autocomplete="current-password"></label></div><div class="actions"><button class="btn green" id="doLogin">Войти</button></div><div id="loginInfo" class="small"></div></div></div>
+<div id="setupModal" class="modal hidden"><div><button class="close" id="setupClose">×</button><h2>👑 Первый запуск</h2><div class="small">Создайте первого администратора. После публикации журнала сотрудники смогут входить по своим логинам и паролям.</div><div class="adminForm" style="margin-top:12px"><label>ФИО<input id="setupUserName"></label><label>Логин<input id="setupLogin" autocomplete="username"></label><label>Пароль<input id="setupPassword" type="password" autocomplete="new-password"></label></div><div class="actions"><button class="btn green" id="doSetup">Создать администратора</button></div><div id="setupInfo" class="small"></div></div></div>
+<div id="usersModal" class="modal hidden"><div><button class="close" id="usersClose">×</button><h2>👥 Люди</h2><div class="small">Добавлять сотрудников может только администратор.</div><div class="adminForm" style="margin-top:12px"><label>ФИО<input id="newUserName"></label><label>Логин<input id="newUserLogin"></label><label>Пароль<input id="newUserPassword" type="password"></label><label>Роль<select id="newUserRole"><option value="editor">Редактор</option><option value="viewer">Наблюдатель</option><option value="admin">Администратор</option></select></label></div><div class="actions"><button class="btn green" id="createUser">+ Создать</button></div><div id="usersInfo" class="small"></div><div id="usersList" class="sheetNote" style="margin-top:12px"></div></div></div>
+<div id="historyModal" class="modal hidden"><div><button class="close" id="historyClose">×</button><h2>📜 История</h2><div id="sharedHistory" class="sheetNote"></div></div></div>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://unpkg.com/html5-qrcode"></script>
@@ -77,139 +89,43 @@
 <script src="https://cdn.jsdelivr.net/npm/docx@9.8.1/dist/index.iife.js"></script>
 <script>
 let wb=null,items=[],currentFileName='Перечень СИ.xlsx',visibleCount=300,scanner=null;
-const SHARED_DEFAULTS={owner:'Denis-coder',repo:'si-accounting',branch:'main',path:'si-journal.json'};
-let shared={...SHARED_DEFAULTS,token:'',login:'',sha:'',loadedVersion:0,journal:null,dirty:false,autoTimer:null,pollTimer:null};
-function loadSharedSettings(){
-  try{let s=JSON.parse(localStorage.getItem('siAccountingGithub')||'{}');shared={...shared,...s};}catch(e){}
-  ghOwner.value=shared.owner;ghRepo.value=shared.repo;ghBranch.value=shared.branch;ghPath.value=shared.path;ghToken.value=shared.token||'';
-  updateSharedUI();
-}
-function saveSharedSettingsLocal(){
-  shared.owner=ghOwner.value.trim()||SHARED_DEFAULTS.owner;shared.repo=ghRepo.value.trim()||SHARED_DEFAULTS.repo;
-  shared.branch=ghBranch.value.trim()||SHARED_DEFAULTS.branch;shared.path=ghPath.value.trim()||SHARED_DEFAULTS.path;
-  shared.token=ghToken.value.trim();
-  localStorage.setItem('siAccountingGithub',JSON.stringify({owner:shared.owner,repo:shared.repo,branch:shared.branch,path:shared.path,token:shared.token,login:shared.login||''}));
-  updateSharedUI();
-}
+const SHARED_DEFAULTS={owner:'Denis-coder',repo:'Uchet-si',branch:'main',path:'si-journal.json'};
+let shared={...SHARED_DEFAULTS,token:'',sha:'',loadedVersion:0,journal:null,dirty:false,autoTimer:null,login:'',user:null,pendingAudits:[]};
+let localUsers=[];
+function loadSharedSettings(){try{let s=JSON.parse(localStorage.getItem('siAccountingGithub')||'{}');shared={...shared,...s};}catch(e){}ghOwner.value=shared.owner;ghRepo.value=shared.repo;ghBranch.value=shared.branch;ghPath.value=shared.path;ghToken.value=shared.token||'';loadLocalUser();updateSharedUI()}
+function saveSharedSettingsLocal(){shared.owner=ghOwner.value.trim()||SHARED_DEFAULTS.owner;shared.repo=ghRepo.value.trim()||SHARED_DEFAULTS.repo;shared.branch=ghBranch.value.trim()||SHARED_DEFAULTS.branch;shared.path=ghPath.value.trim()||SHARED_DEFAULTS.path;shared.token=ghToken.value.trim();localStorage.setItem('siAccountingGithub',JSON.stringify({owner:shared.owner,repo:shared.repo,branch:shared.branch,path:shared.path,token:shared.token}));updateSharedUI()}
 function githubUrl(){return `https://api.github.com/repos/${encodeURIComponent(shared.owner)}/${encodeURIComponent(shared.repo)}/contents/${shared.path.split('/').map(encodeURIComponent).join('/')}`}
 function githubGetUrl(){return githubUrl()+`?ref=${encodeURIComponent(shared.branch)}`}
+function githubRepoUrl(){return `https://api.github.com/repos/${encodeURIComponent(shared.owner)}/${encodeURIComponent(shared.repo)}`}
 function rawUrl(){return `https://raw.githubusercontent.com/${encodeURIComponent(shared.owner)}/${encodeURIComponent(shared.repo)}/${encodeURIComponent(shared.branch)}/${shared.path.split('/').map(encodeURIComponent).join('/')}`}
-async function githubFetch(url,opts={}){
-  let headers={'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28',...(opts.headers||{})};
-  if(shared.token)headers.Authorization='Bearer '+shared.token;
-  let r=await fetch(url,{...opts,headers});
-  let text=await r.text(),data=null;try{data=text?JSON.parse(text):null}catch(e){}
-  if(!r.ok){let msg=data?.message||text||('HTTP '+r.status);throw new Error(msg)}
-  return data;
-}
+async function githubFetch(url,opts={}){let headers={'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28',...(opts.headers||{})};if(shared.token)headers.Authorization='Bearer '+shared.token;let r=await fetch(url,{...opts,headers});let text=await r.text(),data=null;try{data=text?JSON.parse(text):null}catch(e){}if(!r.ok){let er=new Error(data?.message||text||('HTTP '+r.status));er.status=r.status;throw er}return data}
 function b64utf8(s){let bytes=new TextEncoder().encode(s),bin='';for(let i=0;i<bytes.length;i+=0x8000)bin+=String.fromCharCode(...bytes.subarray(i,i+0x8000));return btoa(bin)}
 function fromB64Utf8(s){let bin=atob(String(s).replace(/\s/g,'')),bytes=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);return new TextDecoder().decode(bytes)}
 function newId(){return crypto.randomUUID?crypto.randomUUID():'si-'+Date.now()+'-'+Math.random().toString(36).slice(2)}
-function ensureItemIds(){
-  let used=new Set();
-  items.forEach(it=>{
-    let key=n(it.sheet)+'|'+n(valText(it.values[3]));
-    if(it.id&& !used.has(it.id)){used.add(it.id);return}
-    let old=items.find(x=>x!==it&&x.id&&!used.has(x.id)&&n(x.sheet)+'|'+n(valText(x.values[3]))===key);
-    if(old){it.id=old.id;used.add(old.id)}else{it.id=newId();used.add(it.id)}
-  });
-}
-function buildWorkbookFromItems(){
-  let by={};items.forEach(it=>{(by[it.sheet]??=[]).push(it)});
-  let out=XLSX.utils.book_new();
-  Object.entries(by).forEach(([sheet,arr])=>{
-    arr.sort((a,b)=>(a.row||0)-(b.row||0));
-    let aoa=[H,...arr.map(it=>it.values.map(valText))];
-    let ws=XLSX.utils.aoa_to_sheet(aoa);XLSX.utils.book_append_sheet(out,ws,(sheet||'Лист').slice(0,31));
-    arr.forEach((it,i)=>{it.row=i+2;it.colMap=new Array(14).fill(0).map((_,j)=>j)});
-  });
-  wb=out;currentFileName='Перечень СИ_общая.xlsx';saveBtn.disabled=!wb;batchQrBtn.disabled=!items.length;
-}
-function journalSnapshot(){
-  ensureItemIds();
-  return {schema:1,app:'si-accounting',updatedAt:new Date().toISOString(),updatedBy:shared.login||'локальный пользователь',
-    instruments:items.map(it=>({id:it.id,sheet:it.sheet,row:it.row,values:it.values.map(valText)})),
-    history:(shared.journal?.history||[]).slice(-500)};
-}
-function setItemsFromJournal(j){
-  if(!j||!Array.isArray(j.instruments))throw new Error('Файл общей базы имеет неверный формат.');
-  items=j.instruments.map((x,i)=>({id:x.id||newId(),sheet:String(x.sheet||'Лист1'),row:Number(x.row)||i+2,values:Array.from({length:14},(_,k)=>x.values?.[k]??''),colMap:new Array(14).fill(0).map((_,k)=>k),mode:'shared'}));
-  shared.journal=j;shared.loadedVersion=Number(j.version||0);buildWorkbookFromItems();populateSheets([...new Map(items.map(it=>[it.sheet,{name:it.sheet,count:0}])).values()].map(s=>({...s,count:items.filter(it=>it.sheet===s.name).length})));refresh();
-}
-async function fetchRemoteMeta(){
-  if(shared.token){try{return await githubFetch(githubGetUrl())}catch(e){if(/404|Not Found/i.test(e.message))return null;throw e}}
-  let r=await fetch(rawUrl(),{cache:'no-store'});if(r.status===404)return null;if(!r.ok)throw new Error('Не удалось прочитать общую базу: HTTP '+r.status);
-  let j=await r.json();return {content:btoa(unescape(encodeURIComponent(JSON.stringify(j)))),sha:'',journal:j};
-}
-async function loadSharedFromSite(silent=false){
-  try{
-    let remote=await fetchRemoteMeta();
-    if(!remote){if(!silent)alert('Файл общей базы пока не найден. Сначала кто-то должен опубликовать его.');return false}
-    let j=remote.journal||JSON.parse(fromB64Utf8(remote.content||''));
-    if(!j?.instruments)throw new Error('В общей базе нет списка СИ.');
-    setItemsFromJournal(j);shared.sha=remote.sha||'';shared.loadedVersion=Number(j.version||0);shared.dirty=false;
-    if(!shared.token&& !silent)alert(`Загружено СИ: ${items.length}. Вы вошли как читатель — для изменений добавьте свой GitHub token.`);
-    updateSharedUI();return true;
-  }catch(e){console.error(e);if(!silent)alert('Не удалось загрузить общую базу: '+e.message);return false}
-}
-async function getRemoteApi(){
-  if(!shared.token)throw new Error('Для записи нужен GitHub token.');
-  return await githubFetch(githubGetUrl());
-}
-async function publishShared(force=false,reason='изменение'){
-  if(!shared.token){alert('Для публикации нужен ваш GitHub Fine-grained token. Откройте «Общая база» → «Настроить».');return false}
-  ensureItemIds();let local=journalSnapshot();local.version=Math.max(Date.now(),(shared.journal?.version||0)+1);
-  try{
-    let remote=await getRemoteApi();
-    if(remote && shared.sha && remote.sha!==shared.sha && !force){
-      shared.dirty=true;updateSharedUI();
-      alert('⚠️ Общая база уже изменена другим пользователем. Я не перезаписываю его изменения. Нажмите «Загрузить с сайта», проверьте актуальные данные и повторите свою правку.');
-      return false;
-    }
-    if(remote && !shared.sha && !force && !confirm('Файл общей базы уже существует. Заменить его текущим содержимым Excel/приложения?'))return false;
-    local.history=(shared.journal?.history||[]).slice(-500);
-    local.history.push({id:newId(),at:new Date().toISOString(),by:shared.login||'GitHub user',action:reason,count:items.length});
-    local.history=local.history.slice(-500);
-    let body={message:`Учёт СИ: ${reason}`,content:b64utf8(JSON.stringify(local,null,2)),branch:shared.branch};
-    if(remote?.sha)body.sha=remote.sha;
-    let saved=await githubFetch(githubUrl(),{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-    shared.sha=saved.content?.sha||remote?.sha||'';shared.journal=local;shared.loadedVersion=local.version;shared.dirty=false;updateSharedUI();
-    return true;
-  }catch(e){console.error(e);alert('Не удалось опубликовать общую базу: '+e.message);return false}
-}
-function scheduleSharedPublish(reason){
-  if(!shared.token)return;
-  shared.dirty=true;updateSharedUI();clearTimeout(shared.autoTimer);
-  shared.autoTimer=setTimeout(()=>publishShared(false,reason),2500);
-}
-function updateSharedUI(){
-  let configured=!!shared.owner&&!!shared.repo&&!!shared.path;
-  let role=shared.token?(shared.login?`Редактор: ${shared.login}`:'Редактор с token'):'Читатель';
-  let state=shared.dirty?' · ⏳ есть изменения, ожидается публикация':'';
-  sharedStatus.innerHTML=`<b>${esc(role)}</b> · ${esc(shared.owner)}/${esc(shared.repo)} · ${esc(shared.path)}${state}`;
-  sharedPublishBtn.disabled=!shared.token||!items.length;
-}
-async function testGitHubToken(){
-  if(!ghToken.value.trim()){sharedSettingsInfo.textContent='Введите token.';return}
-  try{
-    let old=shared.token;shared.token=ghToken.value.trim();let me=await githubFetch('https://api.github.com/user');
-    shared.login=me.login||'';saveSharedSettingsLocal();sharedSettingsInfo.textContent=`✅ Token работает. GitHub: ${me.login}.`;
-  }catch(e){shared.token='';sharedSettingsInfo.textContent='❌ Token не принят: '+e.message}
-}
-function openSharedSettings(){sharedModal.classList.remove('hidden');ghOwner.value=shared.owner;ghRepo.value=shared.repo;ghBranch.value=shared.branch;ghPath.value=shared.path;ghToken.value=shared.token||''}
-function forgetSharedToken(){shared.token='';shared.login='';localStorage.setItem('siAccountingGithub',JSON.stringify({owner:shared.owner,repo:shared.repo,branch:shared.branch,path:shared.path}));ghToken.value='';updateSharedUI();sharedSettingsInfo.textContent='Token удалён с этого устройства.'}
-async function pollShared(){
-  if(!shared.journal)return;
-  try{
-    let remote=await fetchRemoteMeta();if(!remote?.journal)return;
-    let rv=Number(remote.journal.version||0);
-    if(rv>Number(shared.loadedVersion||0)){
-      if(shared.dirty){if(confirm('🌐 В общей базе появились новые изменения, но на этом устройстве есть свои. Загрузить новую версию и отказаться от своих ещё не опубликованных изменений?'))await loadSharedFromSite(true)}
-      else if(confirm('🌐 В общей базе появилась новая версия. Загрузить её сейчас?'))await loadSharedFromSite(true);
-    }
-  }catch(e){console.debug('shared poll',e)}
-}
-
+function ensureItemIds(){let used=new Set();items.forEach(it=>{if(it.id&&!used.has(it.id)){used.add(it.id);return}it.id=newId();used.add(it.id)})}
+function buildWorkbookFromItems(){let by={};items.forEach(it=>(by[it.sheet]??=[]).push(it));let out=XLSX.utils.book_new();Object.entries(by).forEach(([sheet,arr])=>{arr.sort((a,b)=>(a.row||0)-(b.row||0));let ws=XLSX.utils.aoa_to_sheet([H,...arr.map(it=>it.values.map(valText))]);XLSX.utils.book_append_sheet(out,ws,(sheet||'Лист').slice(0,31));arr.forEach((it,i)=>{it.row=i+2;it.colMap=new Array(14).fill(0).map((_,j)=>j)})});wb=out;currentFileName='Перечень СИ_общая.xlsx';saveBtn.disabled=!wb;batchQrBtn.disabled=!items.length}
+function journalSnapshot(){ensureItemIds();return {schema:3,app:'si-accounting',updatedAt:new Date().toISOString(),updatedBy:shared.user?.name||shared.login||'неизвестно',version:Date.now(),users:(shared.journal?.users||localUsers||[]),instruments:items.map(it=>({id:it.id,sheet:it.sheet,row:it.row,values:it.values.map(valText)})),history:(shared.journal?.history||[]).slice(-500)}}
+function setItemsFromJournal(j){if(!j||!Array.isArray(j.instruments))throw new Error('si-journal.json имеет неверный формат.');shared.journal=j;localUsers=Array.isArray(j.users)?j.users:[];items=j.instruments.map((x,i)=>({id:x.id||newId(),sheet:String(x.sheet||'Лист1'),row:Number(x.row)||i+2,values:Array.from({length:14},(_,k)=>x.values?.[k]??''),colMap:new Array(14).fill(0).map((_,k)=>k),mode:'shared'}));shared.sharedMode=true;shared.loadedVersion=Number(j.version||0);buildWorkbookFromItems();populateSheets([...new Map(items.map(it=>[it.sheet,{name:it.sheet,count:0}])).values()].map(s=>({...s,count:items.filter(it=>it.sheet===s.name).length})));refresh();updateSharedUI()}
+async function fetchRemoteMeta(){if(shared.token){try{return await githubFetch(githubGetUrl())}catch(e){if(e.status===404)return null;throw e}}let r=await fetch(rawUrl(),{cache:'no-store'});if(r.status===404)return null;if(!r.ok)throw new Error('Не удалось прочитать si-journal.json: HTTP '+r.status);let j=await r.json();return {content:b64utf8(JSON.stringify(j)),sha:'',journal:j}}
+async function loadSharedFromSite(silent=false){try{let remote=await fetchRemoteMeta();if(!remote){if(!silent)alert('si-journal.json пока нет. Сначала загрузите Excel, создайте администратора и опубликуйте базу.');return false}let j=remote.journal||JSON.parse(fromB64Utf8(remote.content||''));setItemsFromJournal(j);shared.sha=remote.sha||'';shared.loadedVersion=Number(j.version||0);shared.dirty=false;if(!silent)alert(`Загружено СИ: ${items.length}.`);return true}catch(e){console.error(e);if(!silent)alert('Не удалось загрузить общую базу: '+e.message);return false}}
+async function publishShared(force=false,reason='изменение',auditDetails=null){if(!shared.token){alert('Вставьте токен бригады в «База».');return false}if(!shared.user||!['admin','editor'].includes(shared.user.role)){alert('🔒 Для публикации нужен вход сотрудника с ролью редактора или администратора.');return false}ensureItemIds();try{let remote=await getRemoteApi(),remoteJournal=remote?.content?JSON.parse(fromB64Utf8(remote.content)):null;if(remote&&shared.sha&&remote.sha!==shared.sha&&!force){shared.dirty=true;updateSharedUI();alert('⚠️ База уже изменилась на другом устройстве. Сначала загрузите свежую версию.');return false}let local=journalSnapshot();local.version=Math.max(Date.now(),Number(remoteJournal?.version||0)+1);local.users=(remoteJournal?.users||local.users||[]);let audits=shared.pendingAudits.length?shared.pendingAudits:[{action:reason,details:auditDetails||null}];let entries=audits.map(a=>({id:newId(),at:new Date().toISOString(),by:shared.user.name,action:a.action||reason,details:a.details||null}));local.history=(remoteJournal?.history||shared.journal?.history||[]).concat(entries).slice(-500);local.updatedBy=shared.user.name;let body={message:`Учёт СИ: ${reason} (${shared.user.name})`,content:b64utf8(JSON.stringify(local,null,2)),branch:shared.branch};if(remote?.sha)body.sha=remote.sha;let saved=await githubFetch(githubUrl(),{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});shared.sha=saved.content?.sha||remote?.sha||'';shared.journal=local;shared.loadedVersion=local.version;shared.dirty=false;shared.pendingAudits=[];localUsers=local.users;updateSharedUI();return true}catch(e){console.error(e);alert('Не удалось опубликовать: '+e.message);return false}}
+async function getRemoteApi(){if(!shared.token)throw new Error('Нет токена бригады');return await githubFetch(githubGetUrl())}
+function scheduleSharedPublish(reason,details=null){if(!shared.token||!shared.user||!['admin','editor'].includes(shared.user.role))return;shared.pendingAudits.push({action:reason,details});shared.dirty=true;updateSharedUI();clearTimeout(shared.autoTimer);shared.autoTimer=setTimeout(()=>publishShared(false,reason,details),2500)}
+function updateSharedUI(){let u=shared.user;let role=u?`👤 ${u.name} · ${u.role==='admin'?'администратор':u.role==='editor'?'редактор':'наблюдатель'}`:'🔐 Не выполнен вход';let mode=shared.sharedMode?' · общая база':' · локальный Excel';let state=shared.dirty?' · ⏳ ждёт публикации':'';sharedStatus.innerHTML=`<b>${esc(role)}</b>${mode}${state}`;sharedUserStatus.innerHTML=u?`Правки записываются в историю от имени <b>${esc(u.name)}</b>.`:shared.sharedMode?'Загрузите базу и войдите под своим логином.':'Первый запуск: создайте администратора.';sharedPublishBtn.disabled=!shared.token||!u||!['admin','editor'].includes(u.role)||!items.length;tabPeople.classList.toggle('hidden',u?.role!=='admin');}
+async function hashPassword(password,salt){let enc=new TextEncoder(),key=await crypto.subtle.importKey('raw',enc.encode(password),'PBKDF2',false,['deriveBits']);let bits=await crypto.subtle.deriveBits({name:'PBKDF2',salt:enc.encode(salt),iterations:120000,hash:'SHA-256'},key,256);return [...new Uint8Array(bits)].map(x=>x.toString(16).padStart(2,'0')).join('')}
+async function makeUser(name,login,password,role){if(!name||!login||!password)throw new Error('Заполните ФИО, логин и пароль.');if(password.length<6)throw new Error('Пароль должен быть не короче 6 символов.');let salt=crypto.randomUUID?crypto.randomUUID():String(Date.now());return {id:newId(),name:name.trim(),login:login.trim().toLowerCase(),role,active:true,salt,hash:await hashPassword(password,salt)}}
+function loadLocalUser(){try{let u=JSON.parse(localStorage.getItem('siAccountingUser')||'null');if(u)shared.user=u}catch(e){shared.user=null}}
+function saveLocalUser(){if(shared.user)localStorage.setItem('siAccountingUser',JSON.stringify(shared.user));else localStorage.removeItem('siAccountingUser')}
+async function login(){try{if(!shared.journal?.users?.length)throw new Error('Сначала загрузите общую базу или создайте администратора.');let login=n(loginName.value),u=shared.journal.users.find(x=>x.login===login&&x.active!==false);if(!u)throw new Error('Неверный логин или пароль.');let h=await hashPassword(loginPassword.value,u.salt);if(h!==u.hash)throw new Error('Неверный логин или пароль.');shared.user={id:u.id,name:u.name,login:u.login,role:u.role};saveLocalUser();loginModal.classList.add('hidden');loginInfo.textContent='';loginPassword.value='';updateSharedUI();alert(`Добро пожаловать, ${u.name}!`)}catch(e){loginInfo.textContent='❌ '+e.message}}
+function logout(){shared.user=null;saveLocalUser();updateSharedUI();alert('Вы вышли на этом устройстве.')}
+async function setupAdmin(){try{if(shared.journal?.users?.length){setupInfo.textContent='❌ Администратор уже создан.';return}let u=await makeUser(setupUserName.value,setupLogin.value,setupPassword.value,'admin');shared.journal={schema:3,app:'si-accounting',updatedAt:new Date().toISOString(),version:0,users:[u],instruments:items.map(it=>({id:it.id||newId(),sheet:it.sheet,row:it.row,values:it.values.map(valText)})),history:[]};localUsers=[u];shared.user={id:u.id,name:u.name,login:u.login,role:'admin'};saveLocalUser();setupInfo.textContent='✅ Администратор создан. Теперь загрузите Excel и нажмите «Опубликовать на сайт». ';updateSharedUI()}catch(e){setupInfo.textContent='❌ '+e.message}}
+async function loadUsers(){if(shared.user?.role!=='admin')return;let users=shared.journal?.users||[];usersList.innerHTML='<table class="userTable"><thead><tr><th>ФИО</th><th>Логин</th><th>Роль</th><th>Статус</th><th></th></tr></thead><tbody>'+users.map(u=>`<tr><td>${esc(u.name)}</td><td>${esc(u.login)}</td><td>${esc(u.role)}</td><td><span class="pill ${u.active===false?'off':''}">${u.active===false?'заблокирован':'активен'}</span></td><td>${u.id===shared.user.id?'—':`<button class="btn secondary" data-uid="${u.id}">${u.active===false?'Включить':'Заблокировать'}</button>`}</td></tr>`).join('')+'</tbody></table>';usersList.querySelectorAll('[data-uid]').forEach(b=>b.onclick=()=>{let u=users.find(x=>x.id===b.dataset.uid);if(u){u.active=u.active===false;shared.journal.users=users;usersInfo.textContent='Изменение сохранено. Нажмите «Опубликовать на сайт».';shared.dirty=true;loadUsers();updateSharedUI()}})}
+async function createUser(){try{if(shared.user?.role!=='admin')throw new Error('Только администратор может добавлять сотрудников.');let users=shared.journal?.users||[];if(users.some(u=>u.login===n(newUserLogin.value)))throw new Error('Такой логин уже существует.');let u=await makeUser(newUserName.value,newUserLogin.value,newUserPassword.value,newUserRole.value);users.push(u);shared.journal.users=users;localUsers=users;shared.dirty=true;newUserName.value='';newUserLogin.value='';newUserPassword.value='';usersInfo.textContent='✅ Сотрудник создан. Нажмите «Опубликовать на сайт».';loadUsers();updateSharedUI()}catch(e){usersInfo.textContent='❌ '+e.message}}
+function showSharedHistory(){let box=sharedHistory;if(!shared.journal?.history?.length){box.innerHTML='<b>История пока пуста.</b>';return}box.innerHTML=shared.journal.history.slice().reverse().slice(0,200).map(x=>{let d=x.details||{},detail='';if(Array.isArray(d.changes))detail='<div class="subtle">'+d.changes.map(c=>`<div><b>${esc(c.field)}</b>: «${esc(c.from||'')}» → «${esc(c.to||'')}»</div>`).join('')+'</div>';else if(d.serial)detail=`<div class="subtle">Зав. №: <b>${esc(d.serial)}</b> · ${esc(d.name||'СИ')} · ${esc(d.sheet||'')}</div>`;return `<div class="field"><b>${esc(new Date(x.at).toLocaleString('ru-RU'))} · 👤 ${esc(x.by||'')}</b><div>${esc(x.action||'Изменение')}</div>${detail}</div>`}).join('')}
+function openSharedSettings(){sharedModal.classList.remove('hidden');ghOwner.value=shared.owner;ghRepo.value=shared.repo;ghBranch.value=shared.branch;ghPath.value=shared.path;ghToken.value=shared.token||'';sharedSettingsInfo.textContent=shared.token?'Токен сохранён на этом устройстве.':'Токен ещё не задан.'}
+async function testGitHubToken(){try{if(!ghToken.value.trim())throw new Error('Введите токен.');shared.owner=ghOwner.value.trim()||SHARED_DEFAULTS.owner;shared.repo=ghRepo.value.trim()||SHARED_DEFAULTS.repo;shared.branch=ghBranch.value.trim()||SHARED_DEFAULTS.branch;shared.path=ghPath.value.trim()||SHARED_DEFAULTS.path;shared.token=ghToken.value.trim();await githubFetch('https://api.github.com/user');await githubFetch(githubRepoUrl());saveSharedSettingsLocal();sharedSettingsInfo.textContent='✅ Токен работает и репозиторий доступен.';updateSharedUI()}catch(e){sharedSettingsInfo.textContent='❌ '+e.message}}
+function forgetSharedToken(){shared.token='';localStorage.setItem('siAccountingGithub',JSON.stringify({owner:shared.owner,repo:shared.repo,branch:shared.branch,path:shared.path}));ghToken.value='';updateSharedUI();sharedSettingsInfo.textContent='Токен удалён.'}
+async function pollShared(){if(!shared.journal)return;try{let remote=await fetchRemoteMeta();let j=remote?.journal||(remote?.content?JSON.parse(fromB64Utf8(remote.content)):null);let rv=Number(j?.version||0);if(rv>Number(shared.loadedVersion||0)){if(shared.dirty){if(confirm('🌐 На сайте появилась новая версия. Отказаться от своих ещё не опубликованных изменений и загрузить её?'))await loadSharedFromSite(true)}else await loadSharedFromSite(true)}}catch(e){console.debug(e)}}
 const H=['№ п/п','Наименование','Тип','Заводской номер','Год выпуска','Диапазон измерений','Класс точности','Место установки СИ','Объект установки','Подразделение','Дата установки','Межповерочный интервал, мес.','Дата последней поверки / калибровки','Поверка (П)/ Калибровка (К)'];
 const HEADER_ALIASES=[['№ п/п','№','номер','п/п'],['наименование'],['тип'],['заводской номер','заводской №','зав. номер','зав.№'],['год выпуска'],['диапазон измерений','диапазон'],['класс точности'],['место установки си','место установки'],['объект установки','объект'],['подразделение'],['дата установки'],['межповерочный интервал','межповерочный интервал, мес.','интервал поверки'],['дата последней поверки / калибровки','дата последней поверки','последняя поверка','дата поверки'],['поверка (п)/ калибровка (к)','поверка / калибровка','поверка','калибровка']];
 const esc=x=>String(x??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
@@ -222,7 +138,7 @@ function looksLikeDataSheet(a){let hits=0;for(let i=0;i<a.length;i++)if(looksLik
 function canonicalValues(r,map){let out=new Array(14).fill('');for(let i=0;i<14;i++){let c=map[i];out[i]=c>=0?(r[c]??''):''}return out}
 function isControlled(r){let name=n(r[1]);return name.includes('манометр')||name.includes('термометр биметаллический')}
 function parseMark(v){if(v==null||v==='')return null;if(v instanceof Date&&!isNaN(v)){let d=new Date(v);d.setHours(0,0,0,0);return d}if(typeof v==='number'){let d=XLSX.SSF.parse_date_code(v);if(d)return new Date(d.y,d.m-1,d.d)}let s=String(v).trim().toUpperCase().replace(/\s+/g,'').replaceAll('К','K').replaceAll('В','V');let m=s.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{2,4})$/);if(m){let y=+m[3];if(y<100)y+=2000;return new Date(y,+m[2]-1,+m[1])}m=s.match(/^(\d{1,2})K(\d{2,4})$/);if(m){let q=+m[1],y=+m[2];if(y<100)y+=2000;return new Date(y,q*3,0)}m=s.match(/^(\d{2,4}).*?(\d)K$/);if(m){let y=+m[1];if(y<100)y+=2000;let q=+m[2];return new Date(y,q*3,0)}m=s.match(/^[A-ZА-Я]+(\d{2,4})$/)||s.match(/^(\d{2,4})[A-ZА-Я]+$/);if(m){let y=+m[1];if(y<100)y+=2000;return new Date(y,11,31)}return null}
-function dueDate(r){if(!isControlled(r))return null;let d=parseMark(r[12]);if(!d)return null;let months=parseInt(String(r[11]??'').replace(',','.').match(/\d+/)?.[0]||'12',10);if(!Number.isFinite(months)||months<=0)months=12;let due=new Date(d);due.setMonth(due.getMonth()+months);due.setHours(0,0,0,0);return due}
+function dueDate(r){if(!isControlled(r))return null;let d=parseMark(r[12]);if(!d)return null;let name=n(r[1]);let years=name.includes('термометр биметаллический')?2:1;let due=new Date(d);due.setFullYear(due.getFullYear()+years);due.setHours(0,0,0,0);return due}
 function state(r){let d=dueDate(r);if(!d)return {t:'normal',d:null};let now=new Date();now.setHours(0,0,0,0);let soon=new Date(now);soon.setMonth(soon.getMonth()+3);return {t:d<now?'expired':d<soon?'warn':'ok',d}}
 function parseWorkbook(){items=[];let detectedSheets=[],skippedSheets=[];wb.SheetNames.forEach((sn,si)=>{if(n(sn).startsWith('лист')){skippedSheets.push({name:sn,reason:'служебный лист «Лист…»'});return}let ws=wb.Sheets[sn],a=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:true,blankrows:false});if(!a.length){skippedSheets.push({name:sn,reason:'пустой'});return}let hi=headerRow(a),map,start,mode='header';if(hi>=0){map=headerMap(a[hi]);if(map[1]<0||map[3]<0){skippedSheets.push({name:sn,reason:'неполный заголовок'});return}start=hi+1}else if(looksLikeDataSheet(a)){map=new Array(14).fill(0).map((_,i)=>i);start=0;mode='data-only'}else{skippedSheets.push({name:sn,reason:'не похож на таблицу СИ'});return}let count=0;a.slice(start).forEach((r,ri)=>{let vals=canonicalValues(r,map);if(looksLikeDeviceRow(vals)){items.push({sheet:sn,sheetIndex:si,row:start+ri+1,values:vals,colMap:map.slice(),mode});count++}});if(count)detectedSheets.push({name:sn,count,mode})});return {detectedSheets,skippedSheets}}
 function recalc(){let sh=sheetFilter.value,scoped=items.filter(x=>!sh||x.sheet===sh),overdue=scoped.filter(x=>state(x.values).t==='expired');total.textContent=scoped.length;expired.textContent=overdue.length;soon.textContent=scoped.filter(x=>state(x.values).t==='warn').length;let man=overdue.filter(it=>n(it.values[1]).includes('манометр')).length,term=overdue.filter(it=>n(it.values[1]).includes('термометр биметаллический')).length,other=overdue.length-man-term;let groups={};overdue.forEach(it=>{let name=valText(it.values[1]||'Без наименования').trim()||'Без наименования';groups[name]=(groups[name]||0)+1});let otherLines=Object.entries(groups).filter(([name])=>!n(name).includes('манометр')&&!n(name).includes('термометр биметаллический')).sort((a,b)=>b[1]-a[1]).map(([name,c])=>`${esc(name)}: <b>${c}</b>`).join('<br>');expiredDetails.innerHTML=`Из них все манометры: <b>${man}</b><br>Термометр биметаллический: <b>${term}</b>${other?`<br>Прочие типы: <b>${other}</b>${otherLines?`<div class="subtle">${otherLines}</div>`:''}`:''}`}
@@ -248,26 +164,30 @@ async function downloadQRWord(idx){try{let it=items[idx],lib=getDocx();if(!lib){
 
 function sharedChangeReason(action,details=''){return action+(details?': '+details:'')}
 function editItem(idx){
+  if(shared.sharedMode&&(!shared.user||!['admin','editor'].includes(shared.user.role))){alert('🔒 Для изменения СИ войдите как редактор или администратор.');return}
   let it=items[idx],ws=wb?.Sheets[it.sheet],before=it.values.map(valText);
   for(let j=0;j<14;j++)it.values[j]=document.querySelector('#f'+j).value;
   if(ws){for(let j=0;j<14;j++){let c=it.colMap[j];if(c>=0)ws[XLSX.utils.encode_cell({r:it.row-1,c})]={t:'s',v:it.values[j]}}}
   recalc();render(filteredItems());openItem(idx);saveBtn.disabled=false;
-  let changed=[];for(let j=0;j<14;j++)if(n(before[j])!==n(it.values[j]))changed.push(H[j]);
-  if(changed.length)scheduleSharedPublish(sharedChangeReason('Изменено СИ',`${valText(it.values[3])||'б/н'} · ${changed.join(', ')}`));
+  let changed=[];for(let j=0;j<14;j++)if(n(before[j])!==n(it.values[j]))changed.push({field:H[j],from:before[j],to:valText(it.values[j])});
+  if(changed.length)scheduleSharedPublish(sharedChangeReason('Изменено СИ',`${valText(it.values[3])||'б/н'} · ${changed.map(x=>x.field).join(', ')}`),{itemId:it.id,serial:valText(it.values[3]),name:valText(it.values[1]),sheet:it.sheet,changes:changed});
 }
 function deleteItem(idx){
+  if(shared.sharedMode&&!shared.token){alert('🔒 Общая база открыта только для чтения. Для удаления СИ нужен ваш GitHub token.');return}
   if(!confirm('Удалить это СИ из Excel?'))return;
   let it=items[idx],ws=wb?.Sheets[it.sheet];
   if(ws){let a=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:true,blankrows:false});a.splice(Math.max(0,(it.row||1)-1),1);wb.Sheets[it.sheet]=XLSX.utils.aoa_to_sheet(a)}
   let title=valText(it.values[1]||'СИ')+' · '+(valText(it.values[3])||'б/н');
+  let audit={itemId:it.id,serial:valText(it.values[3]),name:valText(it.values[1]),sheet:it.sheet,oldValues:it.values.map(valText)};
   items.splice(idx,1);recalc();render(filteredItems());closeModal();saveBtn.disabled=false;
-  scheduleSharedPublish(sharedChangeReason('Удалено СИ',title));
+  scheduleSharedPublish(sharedChangeReason('Удалено СИ',title),audit);
 }
 function closeModal(){document.querySelector('#modal').classList.add('hidden')}
 document.querySelector('#close').onclick=closeModal;document.querySelector('#modal').onclick=e=>{if(e.target.id==='modal')closeModal()};
-excel.addEventListener('change',e=>{let f=e.target.files[0];if(!f)return;currentFileName=f.name;fileName.textContent=f.name;loadInfo.innerHTML='<div class="sheetNote">⏳ Читаю Excel-файл…</div>';let rd=new FileReader();rd.onload=ev=>{try{if(typeof XLSX==='undefined')throw new Error('Библиотека XLSX не загрузилась. Проверьте интернет-соединение и перезагрузите приложение.');wb=XLSX.read(ev.target.result,{type:'array',cellDates:true});let info=parseWorkbook();populateSheets(info.detectedSheets);recalc();search.disabled=false;saveBtn.disabled=false;batchQrBtn.disabled=false;visibleCount=300;render(filteredItems());loadInfo.innerHTML=`<div class="successNote">Обработано листов: <b>${info.detectedSheets.length}</b> из ${wb.SheetNames.length}. Найдено СИ: <b>${items.length}</b>.</div>`;if(info.skippedSheets.length)loadInfo.innerHTML+=`<div class="sheetNote"><b>Не включены:</b> ${info.skippedSheets.map(x=>esc(x.name)+' — '+esc(x.reason)).join('; ')}.</div>`}catch(err){console.error(err);loadInfo.innerHTML=`<div class="errorNote">Не удалось прочитать Excel: <b>${esc(err.message||err)}</b></div>`;alert('Не удалось прочитать Excel: '+(err.message||err))}};rd.onerror=()=>{loadInfo.innerHTML='<div class="errorNote">Не удалось прочитать выбранный файл.</div>';alert('Не удалось прочитать выбранный файл.')};rd.readAsArrayBuffer(f)});
+excel.addEventListener('change',e=>{let f=e.target.files[0];if(!f)return;currentFileName=f.name;fileName.textContent=f.name;loadInfo.innerHTML='<div class="sheetNote">⏳ Читаю Excel-файл…</div>';let rd=new FileReader();rd.onload=ev=>{try{if(typeof XLSX==='undefined')throw new Error('Библиотека XLSX не загрузилась. Проверьте интернет-соединение и перезагрузите приложение.');wb=XLSX.read(ev.target.result,{type:'array',cellDates:true});shared.sharedMode=false;let savedJournal=shared.journal;let savedUsers=savedJournal?.users||localUsers||[];shared.journal=savedJournal?{...savedJournal,users:savedUsers}:null;localUsers=savedUsers;let info=parseWorkbook();populateSheets(info.detectedSheets);recalc();search.disabled=false;saveBtn.disabled=false;batchQrBtn.disabled=false;visibleCount=300;render(filteredItems());loadInfo.innerHTML=`<div class="successNote">Обработано листов: <b>${info.detectedSheets.length}</b> из ${wb.SheetNames.length}. Найдено СИ: <b>${items.length}</b>.</div>`;if(info.skippedSheets.length)loadInfo.innerHTML+=`<div class="sheetNote"><b>Не включены:</b> ${info.skippedSheets.map(x=>esc(x.name)+' — '+esc(x.reason)).join('; ')}.</div>`}catch(err){console.error(err);loadInfo.innerHTML=`<div class="errorNote">Не удалось прочитать Excel: <b>${esc(err.message||err)}</b></div>`;alert('Не удалось прочитать Excel: '+(err.message||err))}};rd.onerror=()=>{loadInfo.innerHTML='<div class="errorNote">Не удалось прочитать выбранный файл.</div>';alert('Не удалось прочитать выбранный файл.')};rd.readAsArrayBuffer(f)});
 search.oninput=refresh;sheetFilter.onchange=refresh;loadMore.onclick=()=>{visibleCount+=300;render(filteredItems())};saveBtn.onclick=()=>{if(!wb)return;XLSX.writeFile(wb,currentFileName.replace(/\.xlsx?$/i,'')+'_изменён.xlsx')};
 function addQR(payload,best){
+  if(shared.sharedMode&&(!shared.user||!['admin','editor'].includes(shared.user.role))){alert('🔒 Для добавления СИ войдите как редактор или администратор.');return}
   if(!wb){alert('Сначала загрузите Excel или загрузите общую базу.');return}
   let target=best?.it;if(!target){alert('Не найден лист для добавления.');return}
   let oldIds=new Map(items.map(it=>[n(it.sheet)+'|'+n(valText(it.values[3])),it.id]));
@@ -277,7 +197,7 @@ function addQR(payload,best){
   a.splice(pos-1,0,row);wb.Sheets[target.sheet]=XLSX.utils.aoa_to_sheet(a);
   let info=parseWorkbook();items.forEach(it=>{let k=n(it.sheet)+'|'+n(valText(it.values[3]));if(oldIds.has(k))it.id=oldIds.get(k);});
   ensureItemIds();populateSheets(info.detectedSheets);refresh();saveBtn.disabled=false;
-  scheduleSharedPublish(sharedChangeReason('Добавлено СИ',`${valText(vals[3])||'б/н'} · ${valText(vals[1])||'СИ'}`));
+  scheduleSharedPublish(sharedChangeReason('Добавлено СИ',`${valText(vals[3])||'б/н'} · ${valText(vals[1])||'СИ'}`),{serial:valText(vals[3]),name:valText(vals[1]),sheet:target.sheet,values:vals.map(valText)});
   alert('СИ добавлено в лист «'+target.sheet+'».');
 }
 function score(a,b){let ix=[1,2,5,6,7,8];return ix.reduce((s,i)=>s+(n(a[i])&&n(a[i])===n(b[i])?1:0),0)}
@@ -290,27 +210,7 @@ function safeFileName(s){return String(s||'SI').replace(/[\\/:*?"<>|]+/g,'_').sl
 function downloadBlob(blob,name){let a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000)}
 async function makeBatchQRWord(){if(!items.length){alert('Сначала загрузите Excel.');return}let lib=getDocx();if(!lib){alert('Модуль Word ещё не загрузился. Проверьте интернет и повторите.');return}let selected=items.filter(it=>{let name=n(it.values[1]);return name.includes('манометр')||name.includes('термометр биметаллический')});if(!selected.length){alert('В книге не найдено манометров и биметаллических термометров.');return}if(!confirm(`Будет создан Word-файл с QR-кодами для ${selected.length} СИ. Продолжить?`))return;batchQrBtn.disabled=true;batchQrBtn.textContent='⏳ Создаём Word…';try{let {Document,Packer,Paragraph,TextRun,ImageRun,AlignmentType}=lib;let children=[new Paragraph({alignment:AlignmentType.CENTER,children:[new TextRun({text:'QR-коды средств измерения',bold:true,size:24})]}),new Paragraph({alignment:AlignmentType.CENTER,children:[new TextRun({text:`Манометры и термометры биметаллические · ${selected.length} шт.`,size:16})]})];for(let it of selected){let url=await qrDataURL(qrPayload(it),600),bytes=new Uint8Array(await (await fetch(url)).arrayBuffer()),r=it.values;children.push(new Paragraph({alignment:AlignmentType.CENTER,children:[new TextRun({text:valText(r[1]||'СИ'),bold:true,size:17})]}),new Paragraph({alignment:AlignmentType.CENTER,children:[new ImageRun({data:bytes,transformation:{width:76,height:76},type:'png'})]}),new Paragraph({alignment:AlignmentType.CENTER,children:[new TextRun({text:`Зав. №: ${valText(r[3])||'б/н'} · Место: ${valText(r[7])||'не указано'}`,bold:true,size:14})]}),new Paragraph({alignment:AlignmentType.CENTER,children:[new TextRun({text:`Лист: ${it.sheet} · строка: ${it.row}`,size:12})]}),new Paragraph({children:[new TextRun({text:'',size:8})]}));}let doc=new Document({sections:[{properties:{page:{margin:{top:450,right:500,bottom:450,left:500}}},children}]});let blob=await Packer.toBlob(doc);downloadBlob(blob,`QR_манометры_и_термометры_${new Date().toISOString().slice(0,10)}.docx`);alert(`Готово. Word-файл с ${selected.length} QR-кодами скачан.`)}catch(e){console.error(e);alert('Не удалось создать общий Word-файл: '+(e.message||e))}finally{batchQrBtn.disabled=false;batchQrBtn.textContent='🏷 Все QR'}}
 
-batchQrBtn.onclick=makeBatchQRWord;
-
-
-function showSharedHistory(){
-  if(!shared.journal?.history?.length){sharedHistory.innerHTML='<b>История пока пуста.</b>';sharedHistory.classList.remove('hidden');return}
-  let rows=shared.journal.history.slice().reverse().slice(0,30).map(x=>`<div class="field"><b>${esc(new Date(x.at).toLocaleString('ru-RU'))} · ${esc(x.by||'пользователь')}</b>${esc(x.action||'Изменение')} · СИ в базе: ${Number(x.count)||0}</div>`).join('');
-  sharedHistory.innerHTML='<b>Последние изменения</b>'+rows;sharedHistory.classList.remove('hidden');
-}
-
-sharedBtn.onclick=openSharedSettings;
-sharedSettingsBtn.onclick=openSharedSettings;
-sharedClose.onclick=()=>sharedModal.classList.add('hidden');
-sharedSaveSettings.onclick=()=>{saveSharedSettingsLocal();sharedModal.classList.add('hidden');alert('Настройки общей базы сохранены на этом устройстве.')};
-sharedTestToken.onclick=testGitHubToken;
-sharedHistoryBtn.onclick=showSharedHistory;
-sharedForgetToken.onclick=()=>{if(confirm('Удалить GitHub token только с этого устройства?'))forgetSharedToken()};
-sharedLoadBtn.onclick=()=>loadSharedFromSite(false);
-sharedPublishBtn.onclick=()=>publishShared(false,'ручная публикация');
-loadSharedSettings();
-setInterval(pollShared,60000);
-
+sharedBtn.onclick=openSharedSettings;sharedSettingsBtn.onclick=openSharedSettings;sharedClose.onclick=()=>sharedModal.classList.add('hidden');sharedSaveSettings.onclick=()=>{saveSharedSettingsLocal();sharedModal.classList.add('hidden')};sharedTestToken.onclick=testGitHubToken;sharedForgetToken.onclick=()=>{if(confirm('Удалить токен только с этого устройства?'))forgetSharedToken()};sharedLoadBtn.onclick=()=>loadSharedFromSite(false);sharedPublishBtn.onclick=()=>publishShared(false,'ручная публикация');loginBtn.onclick=()=>{loginModal.classList.remove('hidden');loginName.focus()};loginClose.onclick=()=>loginModal.classList.add('hidden');doLogin.onclick=login;setupBtn.onclick=()=>setupModal.classList.remove('hidden');setupClose.onclick=()=>setupModal.classList.add('hidden');doSetup.onclick=setupAdmin;logoutBtn.onclick=logout;usersBtn.onclick=()=>{usersModal.classList.remove('hidden');loadUsers()};usersClose.onclick=()=>usersModal.classList.add('hidden');createUser.onclick=createUser;historyClose.onclick=()=>historyModal.classList.add('hidden');tabJournal.onclick=()=>window.scrollTo({top:0,behavior:'smooth'});tabHistory.onclick=()=>{showSharedHistory();historyModal.classList.remove('hidden')};tabBase.onclick=openSharedSettings;tabPeople.onclick=()=>{usersModal.classList.remove('hidden');loadUsers()};function ensureAuthButtons(){let acts=document.querySelector('.sharedActions');[['loginSharedBtn','🔐 Войти',()=>loginModal.classList.remove('hidden')],['setupSharedBtn','👑 Первый запуск',()=>setupModal.classList.remove('hidden')],['logoutSharedBtn','Выйти',logout]].forEach(([id,txt,fn])=>{if(!document.getElementById(id)){let b=document.createElement('button');b.id=id;b.className='btn secondary';b.textContent=txt;b.onclick=fn;acts.appendChild(b)}})}ensureAuthButtons();loadSharedSettings();setInterval(pollShared,25000);
 if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
 </body>
