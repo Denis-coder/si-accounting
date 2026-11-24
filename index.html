@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b5fa5">
+<title>КИП-конвертер</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,Segoe UI,sans-serif;background:#f4f6f8;color:#1d2733;padding-bottom:76px}
+header{position:sticky;top:0;background:#0b5fa5;color:#fff;padding:12px 16px;font-weight:700;font-size:18px;z-index:5}
+main{padding:12px;max-width:640px;margin:0 auto}
+section{display:none}
+section.active{display:block}
+.card{background:#fff;border-radius:12px;padding:14px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.card h3{font-size:15px;margin-bottom:10px;color:#0b5fa5}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+.row label{font-size:13px;color:#556;min-width:88px}
+input,select{flex:1;min-width:70px;padding:9px;border:1px solid #ccd5dd;border-radius:8px;font-size:16px;background:#fff}
+input[type=checkbox]{flex:0;min-width:0;transform:scale(1.2)}
+.res{margin-top:8px;padding:10px;background:#eef4fa;border-radius:8px;font-size:15px;white-space:pre-wrap;line-height:1.45}
+.res b{font-size:17px}
+.res.warn{background:#fdecec;color:#a11}
+.hint{font-size:12px;color:#667;margin-top:6px;line-height:1.4}
+.arrow{font-size:16px;color:#889;flex:0}
+nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:#fff;border-top:1px solid #d5dde5;z-index:10;padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;border:0;background:none;padding:9px 1px;font-size:11px;color:#556;font-family:inherit;cursor:pointer}
+nav button.active{color:#0b5fa5;font-weight:700;border-top:2px solid #0b5fa5}
+nav button:not(.active){border-top:2px solid transparent}
+</style>
+</head>
+<body>
+<header>КИП-конвертер</header>
+<main>
+
+<section id="tab-pres" class="active">
+  <div class="card">
+    <h3>Давление</h3>
+    <div class="row"><input id="p_val" type="number" value="1" inputmode="decimal">
+      <select id="p_from"></select><span class="arrow">→</span><select id="p_to"></select></div>
+    <div class="res" id="p_out"></div>
+  </div>
+  <div class="card">
+    <h3>Уровень по давлению столба</h3>
+    <div class="row"><label>Давление, кПа</label><input id="lvl_p" type="number" value="10" inputmode="decimal">
+      <label>Плотность, кг/м³</label><input id="lvl_rho" type="number" value="998" inputmode="decimal"></div>
+    <div class="res" id="lvl_out"></div>
+    <div class="row" style="margin-top:8px"><label>Или высота, м</label><input id="lvl_h" type="number" inputmode="decimal"></div>
+    <div class="res" id="lvl_out2"></div>
+    <div class="hint">P = ρ·g·h, g = 9,80665 м/с². Годится для воды, масла, растворов и любых несжимаемых сред — как раз датчик на дне бака.</div>
+  </div>
+</section>
+
+<section id="tab-temp">
+  <div class="card">
+    <h3>Температура</h3>
+    <div class="row"><input id="t_val" type="number" value="20" inputmode="decimal">
+      <select id="t_from"></select><span class="arrow">→</span><select id="t_to"></select></div>
+    <div class="res" id="t_out"></div>
+  </div>
+  <div class="card">
+    <h3>Термосопротивление (МЭК 60751)</h3>
+    <div class="row"><label>Датчик</label><select id="pt_type"><option>Pt100</option><option>Pt500</option><option>Pt1000</option></select>
+      <label>Режим</label><select id="pt_mode"><option value="c2r">°C → Ом</option><option value="r2c">Ом → °C</option></select></div>
+    <div class="row"><label id="pt_lab">t, °C</label><input id="pt_val" type="number" value="20" inputmode="decimal"></div>
+    <div class="res" id="pt_out"></div>
+    <div class="hint">Коэффициенты A, B, C по МЭК 60751. Ниже 0 °C учитывается член C(t−100)t³ — это стандарт, а не упрощение.</div>
+  </div>
+</section>
+
+<section id="tab-flow">
+  <div class="card"><h3>Объёмный расход</h3>
+    <div class="row"><input id="qv_val" type="number" value="1" inputmode="decimal">
+      <select id="qv_from"></select><span class="arrow">→</span><select id="qv_to"></select></div>
+    <div class="res" id="qv_out"></div></div>
+  <div class="card"><h3>Массовый расход</h3>
+    <div class="row"><input id="qm_val" type="number" value="1" inputmode="decimal">
+      <select id="qm_from"></select><span class="arrow">→</span><select id="qm_to"></select></div>
+    <div class="res" id="qm_out"></div></div>
+  <div class="card">
+    <h3>Расход по перепаду давления</h3>
+    <div class="row"><label>Q макс.</label><input id="dp_qmax" type="number" value="10" inputmode="decimal"><select id="dp_qunit"></select></div>
+    <div class="row"><label>ΔP макс.</label><input id="dp_pmax" type="number" value="100" inputmode="decimal"><select id="dp_punit"></select></div>
+    <div class="row"><label>Сейчас ΔP</label><input id="dp_now" type="number" value="25" inputmode="decimal"></div>
+    <div class="res" id="dp_out"></div>
+    <div class="row" style="margin-top:8px"><label>Или сейчас Q</label><input id="dp_qnow" type="number" inputmode="decimal"></div>
+    <div class="res" id="dp_out2"></div>
+    <div class="hint">Q = K·√ΔP — квадратный корень, как у диафрагм и сужающих устройств. K вычисляется из пары «шкала расхода / шкала ΔP».</div>
+  </div>
+</section>
+
+<section id="tab-elec">
+  <div class="card"><h3>Напряжение</h3>
+    <div class="row"><input id="u_val" type="number" value="1" inputmode="decimal">
+      <select id="u_from"></select><span class="arrow">→</span><select id="u_to"></select></div>
+    <div class="res" id="u_out"></div></div>
+  <div class="card"><h3>Ток</h3>
+    <div class="row"><input id="i_val" type="number" value="1" inputmode="decimal">
+      <select id="i_from"></select><span class="arrow">→</span><select id="i_to"></select></div>
+    <div class="res" id="i_out"></div></div>
+  <div class="card"><h3>Сопротивление</h3>
+    <div class="row"><input id="r_val" type="number" value="1" inputmode="decimal">
+      <select id="r_from"></select><span class="arrow">→</span><select id="r_to"></select></div>
+    <div class="res" id="r_out"></div></div>
+  <div class="card"><h3>Мощность</h3>
+    <div class="row"><input id="w_val" type="number" value="1" inputmode="decimal">
+      <select id="w_from"></select><span class="arrow">→</span><select id="w_to"></select></div>
+    <div class="res" id="w_out"></div></div>
+  <div class="card"><h3>Частота</h3>
+    <div class="row"><input id="fq_val" type="number" value="1" inputmode="decimal">
+      <select id="fq_from"></select><span class="arrow">→</span><select id="fq_to"></select></div>
+    <div class="res" id="fq_out"></div></div>
+</section>
+
+<section id="tab-circ">
+  <div class="card">
+    <h3>Соединение элементов</h3>
+    <div class="row"><label>Тип</label><select id="cir_type">
+      <option value="r">Резисторы</option><option value="c">Конденсаторы</option><option value="l">Катушки (индуктивности)</option></select>
+      <label>Единицы</label><select id="cir_unit"></select></div>
+    <div class="row"><label>Значения</label><input id="cir_list" type="text" value="100, 220, 470" inputmode="decimal"></div>
+    <div class="res" id="cir_out"></div>
+    <div class="hint">Разделитель — запятая или пробел, десятичный знак — точка. Конденсаторы: параллельно складываются, последовательно — как резисторы наоборот. Взаимная индукция катушек не учитывается.</div>
+  </div>
+  <div class="card">
+    <h3>Делитель напряжения</h3>
+    <div class="row"><label>U вх.</label><input id="div_u" type="number" value="24" inputmode="decimal"><span class="arrow">В</span></div>
+    <div class="row"><label>R₁ (верх.)</label><input id="div_r1" type="number" value="10" inputmode="decimal">
+      <label>R₂ (ниж.)</label><input id="div_r2" type="number" value="10" inputmode="decimal">
+      <select id="div_unit"><option value="k">кОм</option><option value="o">Ом</option><option value="m">МОм</option></select></div>
+    <div class="row"><label>Учесть нагрузку Rн</label><input id="div_load" type="checkbox">
+      <input id="div_rn" type="number" placeholder="Rн" inputmode="decimal" disabled><select id="div_rnunit" disabled><option value="k">кОм</option><option value="o">Ом</option><option value="m">МОм</option></select></div>
+    <div class="res" id="div_out"></div>
+    <div class="hint">Без нагрузки: Uвых = Uвх·R₂/(R₁+R₂). С нагрузкой R₂ заменяется на R₂∥Rн — видно, насколько «проседает» выход от входного сопротивления прибора.</div>
+  </div>
+  <div class="card">
+    <h3>Резистор для светодиода</h3>
+    <div class="row"><label>Питание U</label><input id="led_vs" type="number" value="24" inputmode="decimal"><span class="arrow">В</span>
+      <label>U диода</label><input id="led_vf" type="number" value="2.0" step="0.1" inputmode="decimal"><span class="arrow">В</span></div>
+    <div class="row"><label>Ток диода</label><input id="led_if" type="number" value="20" inputmode="decimal"><span class="arrow">мА</span></div>
+    <div class="res" id="led_out"></div>
+  </div>
+  <div class="card">
+    <h3>RC-цепь</h3>
+    <div class="row"><label>R</label><input id="rc_r" type="number" value="10" inputmode="decimal"><select id="rc_ru"><option>Ом</option><option selected>кОм</option><option>МОм</option></select>
+      <label>C</label><input id="rc_c" type="number" value="100" inputmode="decimal"><select id="rc_cu"><option>пФ</option><option>нФ</option><option selected>мкФ</option><option>мФ</option><option>Ф</option></select></div>
+    <div class="res" id="rc_out"></div>
+    <div class="hint">τ = R·C, частота среза f = 1/(2πτ). Заодно показывает заряд до 63% и 95% — пригодится при фильтрации сигналов.</div>
+  </div>
+  <div class="card">
+    <h3>Падение напряжения на кабеле</h3>
+    <div class="row"><label>Материал</label><select id="cab_mat"><option value="0.0175">Медь</option><option value="0.028">Алюминий</option></select>
+      <label>Длина, м</label><input id="cab_l" type="number" value="100" inputmode="decimal"></div>
+    <div class="row"><label>Сечение, мм²</label><input id="cab_s" type="number" value="0.5" step="0.1" inputmode="decimal">
+      <label>Ток, мА</label><input id="cab_i" type="number" value="20" inputmode="decimal"></div>
+    <div class="row"><label>Напряжение питания</label><input id="cab_u" type="number" value="24" inputmode="decimal"><span class="arrow">В</span></div>
+    <div class="res" id="cab_out"></div>
+    <div class="hint">Учитывается прямая и обратная жила (умножение на 2). Полезно для длинных линий 4–20 мА и питания датчиков.</div>
+  </div>
+</section>
+
+<section id="tab-misc">
+  <div class="card"><h3>Длина</h3>
+    <div class="row"><input id="len_val" type="number" value="1" inputmode="decimal">
+      <select id="len_from"></select><span class="arrow">→</span><select id="len_to"></select></div>
+    <div class="res" id="len_out"></div></div>
+  <div class="card"><h3>Масса</h3>
+    <div class="row"><input id="mass_val" type="number" value="1" inputmode="decimal">
+      <select id="mass_from"></select><span class="arrow">→</span><select id="mass_to"></select></div>
+    <div class="res" id="mass_out"></div></div>
+  <div class="card"><h3>Объём</h3>
+    <div class="row"><input id="vol_val" type="number" value="1" inputmode="decimal">
+      <select id="vol_from"></select><span class="arrow">→</span><select id="vol_to"></select></div>
+    <div class="res" id="vol_out"></div></div>
+  <div class="card"><h3>Плотность</h3>
+    <div class="row"><input id="den_val" type="number" value="1" inputmode="decimal">
+      <select id="den_from"></select><span class="arrow">→</span><select id="den_to"></select></div>
+    <div class="res" id="den_out"></div></div>
+  <div class="card">
+    <h3>Токовая петля 4–20 мА</h3>
+    <div class="row"><label>LRV (4 мА)</label><input id="ma_lrv" type="number" value="0" inputmode="decimal">
+      <label>URV (20 мА)</label><input id="ma_urv" type="number" value="100" inputmode="decimal"></div>
+    <div class="row"><label>Ток, мА</label><input id="ma_i" type="number" value="12" inputmode="decimal"></div>
+    <div class="res" id="ma_out"></div>
+    <div class="row" style="margin-top:6px"><label>Или значение</label><input id="ma_v" type="number" inputmode="decimal"></div>
+    <div class="res" id="ma_out2"></div>
+    <div class="hint">За пределами 3,6–21 мА — авария по NAMUR NE43.</div>
+  </div>
+  <div class="card">
+    <h3>Погрешность</h3>
+    <div class="row"><label>Измеренное</label><input id="err_m" type="number" value="51.2" inputmode="decimal">
+      <label>Действительное</label><input id="err_t" type="number" value="50" inputmode="decimal"></div>
+    <div class="row"><label>НП диапазона</label><input id="err_l" type="number" value="0" inputmode="decimal">
+      <label>ПП диапазона</label><input id="err_u" type="number" value="100" inputmode="decimal"></div>
+    <div class="res" id="err_out"></div>
+    <div class="hint">Приведённая погрешность считается к ширине заданного диапазона — как в паспортах и протоколах поверки.</div>
+  </div>
+</section>
+
+</main>
+<nav>
+  <button data-t="tab-pres" class="active">Давл.</button>
+  <button data-t="tab-temp">Темп.</button>
+  <button data-t="tab-flow">Расход</button>
+  <button data-t="tab-elec">Электр.</button>
+  <button data-t="tab-circ">Цепи</button>
+  <button data-t="tab-misc">Прочее</button>
+</nav>
+
+<script>
+'use strict';
+var $ = function(id){ return document.getElementById(id); };
+
+function fmt(x){
+  if (x === null || x === undefined || !isFinite(x)) return '—';
+  if (x !== 0 && (Math.abs(x) >= 1e7 || Math.abs(x) < 1e-4)) return x.toExponential(4);
+  return String(parseFloat(x.toPrecision(8)));
+}
+function fmts(x, unit){ return fmt(x) + (unit ? ' ' + unit : ''); }
+
+/* ---------- вкладки ---------- */
+var tabs = document.querySelectorAll('nav button');
+tabs.forEach(function(b){
+  b.addEventListener('click', function(){
+    tabs.forEach(function(x){ x.classList.remove('active'); });
+    document.querySelectorAll('main section').forEach(function(s){ s.classList.remove('active'); });
+    b.classList.add('active');
+    $('' + b.dataset.t).classList.add('active');
+  });
+});
+
+/* ---------- обычные конвертеры ---------- */
+var CONVS = {
+  p:    {f: {'Па':1, 'кПа':1e3, 'МПа':1e6, 'бар':1e5, 'мбар':100, 'атм':101325, 'мм рт.ст.':133.322, 'мм вод.ст.':9.80665, 'м вод.ст.':9806.65, 'кгс/см²':98066.5, 'psi':6894.76, 'inHg':3386.39, 'inH2O':249.089}},
+  qv:   {f: {'м³/с':3600, 'м³/ч':1, 'м³/сут':24, 'л/с':3.6, 'л/мин':0.06, 'л/ч':1e-3, 'GPM (US)':0.227125, 'CFM':1.69901, 'барр/сут':0.00662446}},
+  qm:   {f: {'кг/с':3600, 'кг/мин':60, 'кг/ч':1, 'т/ч':1000, 'т/сут':1000/24, 'фунт/ч':0.453592, 'фунт/мин':27.2155}},
+  u:    {f: {'мкВ':1e-6, 'мВ':1e-3, 'В':1, 'кВ':1e3}},
+  i:    {f: {'нА':1e-9, 'мкА':1e-6, 'мА':1e-3, 'А':1}},
+  r:    {f: {'мОм':1e-3, 'Ом':1, 'кОм':1e3, 'МОм':1e6, 'ГОм':1e9}},
+  w:    {f: {'мВт':1e-3, 'Вт':1, 'кВт':1e3, 'МВт':1e6, 'ккал/ч':1.163, 'л.с.':735.499, 'BTU/ч':0.293071}},
+  fq:   {f: {'мГц':1e-3, 'Гц':1, 'кГц':1e3, 'МГц':1e6, 'об/мин':1/60}},
+  len:  {f: {'мм':1e-3, 'см':0.01, 'м':1, 'км':1000, 'дюйм':0.0254, 'фут':0.3048, 'миля':1609.344}},
+  mass: {f: {'мг':1e-6, 'г':1e-3, 'кг':1, 'т':1000, 'фунт':0.45359237, 'унция':0.0283495}},
+  vol:  {f: {'мл':1e-3, 'л':1, 'м³':1000, 'см³':1e-3, 'галлон (US)':3.785412, 'баррель':158.987}},
+  den:  {f: {'кг/м³':1, 'г/см³':1000, 'кг/л':1000, 'г/л':1, 'фунт/фут³':16.0185}}
+};
+
+function initConv(pre, cfg){
+  var from = $(pre + '_from'), to = $(pre + '_to'), val = $(pre + '_val'), out = $(pre + '_out');
+  if (!from || !cfg) return;
+  Object.keys(cfg.f).forEach(function(k){ from.add(new Option(k, k)); to.add(new Option(k, k)); });
+  to.selectedIndex = 1;
+  var upd = function(){
+    var x = parseFloat(val.value);
+    if (isNaN(x)) { out.textContent = '—'; return; }
+    out.innerHTML = '<b>' + fmt(x * cfg.f[from.value] / cfg.f[to.value]) + '</b> ' + to.value;
+  };
+  [val, from, to].forEach(function(el){ el.addEventListener('input', upd); });
+  upd();
+}
+Object.keys(CONVS).forEach(function(k){ initConv(k, CONVS[k]); });
+
+/* ---------- температура ---------- */
+var T2C = {C: function(x){return x;}, F: function(x){return (x-32)*5/9;}, K: function(x){return x-273.15;}, R: function(x){return (x-491.67)*5/9;}};
+var C2T = {C: function(x){return x;}, F: function(x){return x*9/5+32;}, K: function(x){return x+273.15;}, R: function(x){return x*9/5+491.67;}};
+(function(){
+  var from = $('t_from'), to = $('t_to'), val = $('t_val'), out = $('t_out');
+  ['C','F','K','R'].forEach(function(k){ from.add(new Option(k, k)); to.add(new Option(k, k)); });
+  from.value = 'C'; to.value = 'K';
+  var upd = function(){
+    var x = parseFloat(val.value);
+    if (isNaN(x)) { out.textContent = '—'; return; }
+    out.innerHTML = '<b>' + fmt(C2T[to.value](T2C[from.value](x))) + '</b> ' + to.value;
+  };
+  [val, from, to].forEach(function(el){ el.addEventListener('input', upd); });
+  upd();
+})();
+
+/* ---------- Pt (МЭК 60751) ---------- */
+var PA = 3.9083e-3, PB = -5.775e-7, PC = -4.183e-12;
+function ptR(t, r0){
+  var r = r0 * (1 + PA*t + PB*t*t);
+  if (t < 0) r += r0 * PC * (t - 100) * Math.pow(t, 3);
+  return r;
+}
+function ptT(r, r0){
+  var lo = -200, hi = 850;
+  for (var k = 0; k < 200; k++){
+    var mid = (lo + hi) / 2;
+    if (ptR(mid, r0) < r) lo = mid; else hi = mid;
+  }
+  return (lo + hi) / 2;
+}
+(function(){
+  var type = $('pt_type'), mode = $('pt_mode'), val = $('pt_val'), out = $('pt_out'), lab = $('pt_lab');
+  var upd = function(){
+    var r0 = {'Pt100':100, 'Pt500':500, 'Pt1000':1000}[type.value];
+    var x = parseFloat(val.value);
+    lab.textContent = mode.value === 'c2r' ? 't, °C' : 'R, Ом';
+    if (isNaN(x)) { out.textContent = '—'; return; }
+    if (mode.value === 'c2r'){
+      if (x < -200 || x > 850) { out.innerHTML = '<span class="res warn">Вне диапазона МЭК (−200…850 °C)</span>'; return; }
+      out.innerHTML = '<b>' + fmt(ptR(x, r0)) + '</b> Ом (' + type.value + ')';
+    } else {
+      out.innerHTML = '<b>' + fmt(ptT(x, r0)) + '</b> °C (' + type.value + ')';
+    }
+  };
+  [type, mode, val].forEach(function(el){ el.addEventListener('input', upd); el.addEventListener('change', upd); });
+  upd();
+})();
+
+/* ---------- уровень ---------- */
+var G = 9.80665;
+(function(){
+  var out1 = $('lvl_out'), out2 = $('lvl_out2');
+  var upd1 = function(){
+    var p = parseFloat($('lvl_p').value), rho = parseFloat($('lvl_rho').value);
+    if (isNaN(p) || isNaN(rho) || rho <= 0) { out1.textContent = '—'; return; }
+    out1.innerHTML = '<b>' + fmt(p*1000/(rho*G)) + '</b> м столба среды';
+  };
+  var upd2 = function(){
+    var h = parseFloat($('lvl_h').value), rho = parseFloat($('lvl_rho').value);
+    if (isNaN(h) || isNaN(rho) || rho <= 0) { out2.textContent = '—'; return; }
+    out2.innerHTML = '<b>' + fmt(rho*G*h/1000) + '</b> кПа';
+  };
+  ['lvl_p','lvl_rho'].forEach(function(id){ $(id).addEventListener('input', upd1); });
+  ['lvl_h','lvl_rho'].forEach(function(id){ $(id).addEventListener('input', upd2); });
+  upd1(); upd2();
+})();
+
+/* ---------- расход по перепаду ---------- */
+(function(){
+  var out1 = $('dp_out'), out2 = $('dp_out2');
+  $('dp_qunit').add(new Option('м³/ч','1')); $('dp_qunit').add(new Option('м³/с','3600'));
+  $('dp_qunit').add(new Option('л/мин','0.06')); $('dp_qunit').add(new Option('л/ч','0.001'));
+  $('dp_punit').add(new Option('кПа','1000')); $('dp_punit').add(new Option('бар','1e5'));
+  $('dp_punit').add(new Option('МПа','1e6')); $('dp_punit').add(new Option('мбар','100'));
+  $('dp_punit').add(new Option('мм рт.ст.','133.322')); $('dp_punit').add(new Option('psi','6894.76'));
+  var upd1 = function(){
+    var qmax = parseFloat($('dp_qmax').value), pmax = parseFloat($('dp_pmax').value), now = parseFloat($('dp_now').value);
+    var qu = parseFloat($('dp_qunit').value), pu = parseFloat($('dp_punit').value);
+    if (isNaN(qmax)||isNaN(pmax)||isNaN(now)||pmax<=0||now<0) { out1.textContent = '—'; return; }
+    var K = (qmax*qu)/Math.sqrt(pmax*pu), q = K*Math.sqrt(now*pu);
+    out1.innerHTML = '<b>' + fmt(q/qu) + '</b> ' + $('dp_qunit').selectedOptions[0].text + ' (K = ' + fmt(K) + ')';
+  };
+  var upd2 = function(){
+    var qmax = parseFloat($('dp_qmax').value), pmax = parseFloat($('dp_pmax').value), q = parseFloat($('dp_qnow').value);
+    var qu = parseFloat($('dp_qunit').value), pu = parseFloat($('dp_punit').value);
+    if (isNaN(q)||isNaN(qmax)||isNaN(pmax)||pmax<=0) { out2.textContent = '—'; return; }
+    var K = (qmax*qu)/Math.sqrt(pmax*pu);
+    out2.innerHTML = '<b>' + fmt(Math.pow(q*qu/K,2)/pu) + '</b> ' + $('dp_punit').selectedOptions[0].text;
+  };
+  ['dp_qmax','dp_pmax','dp_now','dp_qunit','dp_punit'].forEach(function(id){ $(id).addEventListener('input', upd1); $(id).addEventListener('change', upd1); });
+  ['dp_qnow','dp_qunit','dp_punit'].forEach(function(id){ $(id).addEventListener('input', upd2); $(id).addEventListener('change', upd2); });
+  upd1();
+})();
+
+/* ---------- цепи ---------- */
+var CAPF = {'пФ':1e-12, 'нФ':1e-9, 'мкФ':1e-6, 'мФ':1e-3, 'Ф':1};
+var INF = {'мкГн':1e-6, 'мГн':1e-3, 'Гн':1};
+(function(){
+  var type = $('cir_type'), unit = $('cir_unit'), list = $('cir_list'), out = $('cir_out');
+  function fillUnits(){
+    unit.innerHTML = '';
+    var opts = type.value === 'c' ? CAPF : INF;
+    if (type.value === 'r') opts = {'Ом':1, 'кОм':1e3, 'МОм':1e6};
+    Object.keys(opts).forEach(function(k){ unit.add(new Option(k, k)); });
+  }
+  fillUnits();
+  var upd = function(){
+    var vals = list.value.split(/[;\s,]+/).map(parseFloat).filter(function(x){ return isFinite(x) && x > 0; });
+    if (!vals.length) { out.textContent = '—'; return; }
+    var k = type.value === 'c' ? CAPF[unit.value] : INF[unit.value] || (type.value === 'r' ? {'Ом':1,'кОм':1e3,'МОм':1e6}[unit.value] : 1);
+    if (type.value === 'r') k = {'Ом':1,'кОм':1e3,'МОм':1e6}[unit.value];
+    var base = vals.map(function(x){ return x*k; });
+    var sum = base.reduce(function(a,b){ return a+b; }, 0);
+    var par = 1/base.reduce(function(a,b){ return a + 1/b; }, 0);
+    var sn, pn;
+    if (type.value === 'c'){ sn = par; pn = sum; }
+    else { sn = sum; pn = par; }
+    var un = unit.value;
+    out.innerHTML = 'Последовательно: <b>' + fmt(sn/k) + '</b> ' + un +
+      '\nПараллельно: <b>' + fmt(pn/k) + '</b> ' + un;
+  };
+  type.addEventListener('change', function(){ fillUnits(); upd(); });
+  [unit, list].forEach(function(el){ el.addEventListener('input', upd); });
+  upd();
+})();
+
+/* ---------- делитель ---------- */
+(function(){
+  var out = $('div_out'), load = $('div_load'), rn = $('div_rn'), rnu = $('div_rnunit');
+  load.addEventListener('change', function(){ rn.disabled = !load.checked; rnu.disabled = !load.checked; upd(); });
+  var kOf = {o:1, k:1e3, m:1e6};
+  function upd(){
+    var u = parseFloat($('div_u').value), r1 = parseFloat($('div_r1').value), r2 = parseFloat($('div_r2').value);
+    var k = kOf[$('div_unit').value];
+    if (isNaN(u)||isNaN(r1)||isNaN(r2)||r1+r2 <= 0) { out.textContent = '—'; return; }
+    var R1 = r1*k, R2 = r2*k, Rp = R2, rnTxt = '';
+    if (load.checked && isFinite(parseFloat(rn.value)) && parseFloat(rn.value) > 0){
+      var Rn = parseFloat(rn.value)*kOf[rnu.value];
+      Rp = R2*Rn/(R2+Rn); rnTxt = ' (с Rн)';
+    }
+    var vout = u*Rp/(R1+Rp), cur = u/(R1+Rp), p2 = vout*vout/Rp, kd = u/vout;
+    out.innerHTML = 'Uвых' + rnTxt + ': <b>' + fmt(vout) + '</b> В' +
+      '\nБез нагрузки: ' + fmt(u*R2/(R1+R2)) + ' В' +
+      '\nТок делителя: ' + fmt(cur*1000) + ' мА' +
+      '\nМощность на R₂: ' + fmt(p2*1000) + ' мВт' +
+      '\nКоэффициент деления: ' + fmt(kd);
+  }
+  ['div_u','div_r1','div_r2','div_unit','div_rn','div_rnunit'].forEach(function(id){ $(id).addEventListener('input', upd); $(id).addEventListener('change', upd); });
+  upd();
+})();
+
+/* ---------- светодиод ---------- */
+var E24 = [10,11,12,13,15,16,18,20,22,24,27,30,33,36,39,43,47,51,56,62,68,75,82,91];
+(function(){
+  var out = $('led_out');
+  var upd = function(){
+    var vs = parseFloat($('led_vs').value), vf = parseFloat($('led_vf').value), im = parseFloat($('led_if').value);
+    if (isNaN(vs)||isNaN(vf)||isNaN(im)||im<=0) { out.textContent = '—'; return; }
+    var du = vs - vf, mA = im/1000, r = du/mA, p = du*mA;
+    if (r <= 0){ out.innerHTML = '<span class="res warn">U диода ≥ напряжения питания — резистор не нужен/невозможен</span>'; return; }
+    var dec = Math.pow(10, Math.floor(Math.log10(r)));
+    var best = E24[0], bd = Infinity, bv = 10*dec;
+    for (var m = 0; m < 6; m++){
+      E24.forEach(function(e){
+        var v = e*Math.pow(10, m);
+        if (Math.abs(v - r) < bd){ bd = Math.abs(v - r); best = v; }
+      });
+      if (bd < r*0.005) break;
+    }
+    var ir = du/best;
+    out.innerHTML = 'Расчётный: <b>' + fmt(r) + '</b> Ом, ближайший E24: <b>' + fmt(best) + '</b> Ом' +
+      '\nМощность: ' + fmt(p*1000) + ' мВт (ставьте с запасом ×2)' +
+      '\nРеальный ток с E24: ' + fmt(ir*1000) + ' мА';
+  };
+  ['led_vs','led_vf','led_if'].forEach(function(id){ $(id).addEventListener('input', upd); });
+  upd();
+})();
+
+/* ---------- RC ---------- */
+(function(){
+  var out = $('rc_out');
+  var RF = {'Ом':1, 'кОм':1e3, 'МОм':1e6};
+  var upd = function(){
+    var r = parseFloat($('rc_r').value), c = parseFloat($('rc_c').value);
+    if (isNaN(r)||isNaN(c)||r<=0||c<=0) { out.textContent = '—'; return; }
+    var R = r*RF[$('rc_ru').value], C = c*CAPF[$('rc_cu').value];
+    var tau = R*C, fc = 1/(2*Math.PI*tau);
+    out.innerHTML = 'Постоянная времени τ: <b>' + fmt(tau) + '</b> с' +
+      '\nЧастота среза: <b>' + fmt(fc) + '</b> Гц' +
+      '\n63% заряда через: ' + fmt(tau) + ' с; 95% через: ' + fmt(3*tau) + ' с';
+  };
+  ['rc_r','rc_c','rc_ru','rc_cu'].forEach(function(id){ $(id).addEventListener('input', upd); $(id).addEventListener('change', upd); });
+  upd();
+})();
+
+/* ---------- кабель ---------- */
+(function(){
+  var out = $('cab_out');
+  var upd = function(){
+    var rho = parseFloat($('cab_mat').value), l = parseFloat($('cab_l').value), s = parseFloat($('cab_s').value);
+    var im = parseFloat($('cab_i').value), u = parseFloat($('cab_u').value);
+    if (isNaN(l)||isNaN(s)||isNaN(im)||s<=0) { out.textContent = '—'; return; }
+    var r = 2*rho*l/s, du = im/1000*r;
+    var pct = isFinite(u) && u > 0 ? '\nОт питания: ' + fmt(du/u*100) + ' %' : '';
+    out.innerHTML = 'Сопротивление линии: <b>' + fmt(r) + '</b> Ом' +
+      '\nПадение: <b>' + fmt(du) + '</b> В' + pct;
+  };
+  ['cab_mat','cab_l','cab_s','cab_i','cab_u'].forEach(function(id){ $(id).addEventListener('input', upd); $(id).addEventListener('change', upd); });
+  upd();
+})();
+
+/* ---------- 4–20 мА ---------- */
+(function(){
+  var out1 = $('ma_out'), out2 = $('ma_out2');
+  function span(){
+    var l = parseFloat($('ma_lrv').value), u = parseFloat($('ma_urv').value);
+    return u - l;
+  }
+  function flag(ma){
+    if (ma < 3.6 || ma > 21) return '\n⚠ Вне 3,6–21 мА — авария (NAMUR NE43)';
+    return '';
+  }
+  var upd1 = function(){
+    var l = parseFloat($('ma_lrv').value), u = parseFloat($('ma_urv').value), ma = parseFloat($('ma_i').value);
+    var sp = u - l;
+    if (isNaN(ma) || sp === 0) { out1.textContent = '—'; return; }
+    var v = l + (ma-4)/16*sp;
+    out1.innerHTML = '<b>' + fmt(v) + '</b>' + flag(ma);
+  };
+  var upd2 = function(){
+    var l = parseFloat($('ma_lrv').value), u = parseFloat($('ma_urv').value), v = parseFloat($('ma_v').value);
+    var sp = u - l;
+    if (isNaN(v) || sp === 0) { out2.textContent = '—'; return; }
+    var ma = 4 + 16*(v-l)/sp;
+    out2.innerHTML = '<b>' + fmt(ma) + '</b> мА' + flag(ma);
+  };
+  ['ma_lrv','ma_urv','ma_i'].forEach(function(id){ $(id).addEventListener('input', upd1); });
+  ['ma_lrv','ma_urv','ma_v'].forEach(function(id){ $(id).addEventListener('input', upd2); });
+  upd1();
+})();
+
+/* ---------- погрешность ---------- */
+(function(){
+  var out = $('err_out');
+  var upd = function(){
+    var m = parseFloat($('err_m').value), t = parseFloat($('err_t').value);
+    var l = parseFloat($('err_l').value), u = parseFloat($('err_u').value);
+    if (isNaN(m)||isNaN(t)) { out.textContent = '—'; return; }
+    var abs = Math.abs(m - t);
+    var rel = t !== 0 ? abs/Math.abs(t)*100 : NaN;
+    var sp = u - l;
+    var red = sp !== 0 ? abs/Math.abs(sp)*100 : NaN;
+    out.innerHTML = 'Абсолютная: <b>' + fmt(abs) + '</b>' +
+      '\nОтносительная: <b>' + fmt(rel) + '</b> %' +
+      '\nПриведённая к диапазону: <b>' + fmt(red) + '</b> %';
+  };
+  ['err_m','err_t','err_l','err_u'].forEach(function(id){ $(id).addEventListener('input', upd); });
+  upd();
+})();
+
+/* ---------- service worker ---------- */
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function(){});
+</script>
+</body>
+</html>
