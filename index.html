@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1a5fb4">
+<title>КИПиА — инженерный помощник</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<style>
+:root{--acc:#1a5fb4;--dark:#123a6b;--bg:#f4f6f9;--line:#dfe6ef}
+*{box-sizing:border-box}
+body{margin:0;font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:#22313f;font-size:15px}
+header{position:sticky;top:0;z-index:5;background:linear-gradient(135deg,#123a6b,#1a5fb4);color:#fff;padding:14px 16px 12px}
+header h1{margin:0;font-size:18px;font-weight:600}
+header p{margin:3px 0 0;font-size:12.5px;opacity:.85}
+.page{display:none;padding:14px 12px 96px;max-width:760px;margin:0 auto}
+.page.active{display:block}
+.card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 14px 12px;margin-bottom:12px;box-shadow:0 1px 3px rgba(16,42,67,.06)}
+h2{margin:0 0 4px;font-size:16px;color:var(--dark)}
+label{display:block;font-size:12px;color:#5a6b7f;margin:9px 0 3px}
+input,select{width:100%;padding:9px 10px;border:1px solid #ccd4e0;border-radius:8px;font-size:15px;background:#fff;color:#22313f}
+input:focus,select:focus{outline:2px solid #9dc0ea;border-color:#9dc0ea}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+button.act{margin-top:11px;background:var(--acc);color:#fff;border:none;border-radius:8px;padding:10px 16px;font-size:14px;cursor:pointer}
+button.act:active{background:#14497f}
+button.sec{margin-top:8px;margin-right:8px;background:#eef3fa;color:var(--dark);border:1px solid #c9d6e8;border-radius:8px;padding:8px 13px;font-size:13px;cursor:pointer}
+.res{margin:10px 0 0;font-size:16px;font-weight:600;color:var(--dark);white-space:pre-wrap;word-break:break-word}
+.sub{margin:3px 0 0;font-size:13.5px;color:#42566d}
+.hint{font-size:12.5px;color:#42566d;background:#f0f4fa;border-left:3px solid #9db7d9;border-radius:6px;padding:8px 10px;margin:10px 0 0;line-height:1.45}
+.warn{font-size:13px;color:#a33;background:#fdf0f0;border-left:3px solid #e0a3a3;border-radius:6px;padding:7px 10px;margin-top:9px}
+table{width:100%;border-collapse:collapse;font-size:13px;margin-top:9px}
+th{background:#eef2f7;color:#3d5570;text-align:left;padding:6px 8px;font-weight:600}
+td{border-bottom:1px solid #e8edf3;padding:6px 8px}
+.bar{display:inline-block;width:26px;height:16px;border-radius:3px;border:1px solid rgba(0,0,0,.25);margin-right:4px;vertical-align:middle}
+.cards{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.tool{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px;cursor:pointer;text-align:left;box-shadow:0 1px 3px rgba(16,42,67,.06)}
+.tool b{display:block;font-size:14px;color:var(--dark)}
+.tool span{font-size:12px;color:#5a6b7f}
+.tool .ti{font-size:20px;display:block;margin-bottom:6px}
+nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:#fff;box-shadow:0 -2px 10px rgba(16,42,67,.12);z-index:6}
+nav button{flex:1;background:none;border:none;border-top:2px solid transparent;font-size:10.5px;padding:7px 1px 6px;color:#5a6b7f;cursor:pointer;font-family:inherit}
+nav button.active{color:var(--acc);border-top-color:var(--acc)}
+nav .ico{display:block;font-size:17px;margin-bottom:2px}
+</style>
+</head>
+<body>
+<header><h1>КИПиА · инженерный помощник</h1><p>Расчёты, конвертеры и маркировки — работает офлайн</p></header>
+<nav id="nav"></nav>
+
+<div class="page active" id="page-home">
+<div class="card">
+<h2>Карманный помощник КИПиА</h2>
+<p class="sub">Выберите нужный инструмент. Все вычисления выполняются на устройстве; подключение к интернету для расчётов не требуется.</p>
+<div class="cards">
+<button class="tool" onclick="showTab('codes')"><span class="ti">▦</span><b>Определить номинал</b><span>Цветовые кольца, SMD, коды</span></button>
+<button class="tool" onclick="showTab('elec')"><span class="ti">ϟ</span><b>Токовая петля</b><span>4–20 мА, шкала, нагрузка</span></button>
+<button class="tool" onclick="showTab('temp')"><span class="ti">♨</span><b>Pt100 и термопары</b><span>Сопротивление и температура</span></button>
+<button class="tool" onclick="showTab('pressure')"><span class="ti">◉</span><b>Давление</b><span>Единицы и гидростолб</span></button>
+<button class="tool" onclick="showTab('flow')"><span class="ti">⇢</span><b>Расход</b><span>Перепад давления, импульсы</span></button>
+<button class="tool" onclick="showTab('metro')"><span class="ti">✓</span><b>Погрешность</b><span>Абсолютная, относительная, приведённая</span></button>
+</div>
+</div>
+<div class="card">
+<h2>Быстрые справочные значения</h2>
+<table>
+<tr><th>Величина</th><th>Соотношение</th></tr>
+<tr><td>1 бар</td><td>100 000 Па</td></tr>
+<tr><td>1 кгс/см²</td><td>98 066,5 Па</td></tr>
+<tr><td>Стандартная атмосфера</td><td>101 325 Па</td></tr>
+<tr><td>Вода, 1 м столба</td><td>≈ 9,80665 кПа</td></tr>
+<tr><td>1 мм рт. ст.</td><td>133,322 Па</td></tr>
+<tr><td>Токовый сигнал</td><td>4–20 мА (NAMUR NE43)</td></tr>
+<tr><td>Pt100 при 0 °C</td><td>100,00 Ом</td></tr>
+</table>
+</div>
+<div class="card">
+<h2>Прочие единицы</h2>
+<p class="sub">Длина, масса, объём, плотность и частота — универсальные конвертеры.</p>
+<div id="g-u_len"></div><div id="g-u_mass"></div><div id="g-u_vol"></div><div id="g-u_dens"></div><div id="g-u_freq"></div>
+</div>
+</div>
+
+<div class="page" id="page-pressure">
+<div class="card">
+<h2>Конвертер давления</h2>
+<p class="sub">Введите число и единицу — получите перевод сразу во все остальные единицы.</p>
+<div class="row"><div><label>Значение</label><input id="p_in" type="number" step="any"></div><div><label>Из единицы</label><select id="p_from"></select></div></div>
+<p class="res" id="p_out"></p>
+<table>
+<tr><th>Величина</th><th>Соотношение</th></tr>
+<tr><td>1 бар</td><td>100 000 Па</td></tr>
+<tr><td>1 кгс/см²</td><td>98 066,5 Па</td></tr>
+<tr><td>Стандартная атмосфера</td><td>101 325 Па</td></tr>
+<tr><td>Вода, 1 м столба</td><td>≈ 9,80665 кПа</td></tr>
+<tr><td>Токовый сигнал</td><td>4–20 мА</td></tr>
+</table>
+</div>
+<div class="card">
+<h2>Уровень по давлению столба</h2>
+<p class="sub">Что вводим: перепад давления на датчике (кПа) и плотность среды (кг/м³). Что получаем: высоту столба жидкости h — уровень над точкой измерения.</p>
+<div class="row3"><div><label>Перепад давления, кПа</label><input id="lv_dp" type="number" step="any"></div><div><label>Плотность, кг/м³</label><input id="lv_rho" type="number" step="any" value="1000"></div><div><label>g, м/с²</label><input id="lv_g" type="number" step="any" value="9.80665"></div></div>
+<p class="res" id="lv_out"></p>
+<p class="hint">Формула h = ΔP / (ρ·g). Для закрытых резервуаров учитывайте схему подключения и давление газовой подушки.</p>
+</div>
+</div>
+
+<div class="page" id="page-temp">
+<div class="card">
+<h2>Температурный конвертер</h2>
+<p class="sub">Введите значение и шкалу — остальные три шкалы пересчитаются автоматически.</p>
+<div class="row"><div><label>Значение</label><input id="t_in" type="number" step="any"></div><div><label>Исходная шкала</label><select id="t_from"><option>°C</option><option>°F</option><option>K</option><option>°R</option></select></div></div>
+<p class="res" id="t_out"></p>
+</div>
+<div class="card">
+<h2>Pt100 / Pt500 / Pt1000 (IEC 60751)</h2>
+<p class="sub">Прямой расчёт: вводим температуру — получаем сопротивление датчика. Обратный: вводим сопротивление — получаем температуру.</p>
+<div class="row"><div><label>Температура, °C</label><input id="pt_t" type="number" step="any"></div><div><label>Номинал</label><select id="pt_n"><option value="100">Pt100 (R₀ = 100 Ом)</option><option value="500">Pt500 (R₀ = 500 Ом)</option><option value="1000">Pt1000 (R₀ = 1000 Ом)</option></select></div></div>
+<p class="res" id="pt_out"></p>
+<div class="row"><div><label>Сопротивление, Ом (обратный расчёт)</label><input id="pt_r" type="number" step="any"></div><div></div></div>
+<p class="res" id="pt_out2"></p>
+<p class="hint">Используется уравнение Каллендара — Ван Дюзена для платинового ТС. Обратный расчёт температуры выполняется численно.</p>
+</div>
+<div class="card">
+<h2>Термопара — ориентир по типам K и J</h2>
+<p class="sub">Что вводим: тип, температуру спая (°C) или ЭДС (мВ). Что получаем: ориентировочную ЭДС или температуру.</p>
+<div class="row"><div><label>Тип</label><select id="tc_type"><option>K (хромель-алюмель)</option><option>J (железо-константан)</option></select></div><div><label>Температура, °C</label><input id="tc_t" type="number" step="any"></div></div>
+<p class="res" id="tc_out"></p>
+<div class="row"><div><label>ЭДС, мВ</label><input id="tc_mv" type="number" step="any"></div><div></div></div>
+<p class="res" id="tc_out2"></p>
+<p class="hint">Это приближённая оценка для быстрой прикидки, не замена таблицам НСХ IEC 60584 и компенсации холодного спая. Для точных измерений нужна таблица конкретного типа термопары.</p>
+</div>
+<div class="card">
+<h2>Мостовая схема (МОС) — прикидка термометра сопротивления</h2>
+<p class="sub">Что вводим: сопротивление датчика и сопротивления плеч моста R2, R3 (Ом) плюс напряжение питания моста. Что получаем: приближённое напряжение разбаланса — для оценки чувствительности схемы.</p>
+<div class="row3"><div><label>R_датчика, Ом</label><input id="mos_r" type="number" step="any"></div><div><label>R2, Ом</label><input id="mos_r2" type="number" step="any" value="100"></div><div><label>R3, Ом</label><input id="mos_r3" type="number" step="any" value="100"></div></div>
+<div><label>Питание моста, В</label><input id="mos_u" type="number" step="any" value="5"></div>
+<p class="res" id="mos_out"></p>
+<p class="hint">Упрощённый расчёт по схеме Уитстона. Реальные измерительные цепи требуют учёта проводов (3- и 4-проводные схемы) и настроенных отношений плеч.</p>
+</div>
+</div>
+
+<div class="page" id="page-flow">
+<div class="card">
+<h2>Перепад давления ↔ расход</h2>
+<p class="sub">Что вводим: перепад ΔP (кПа) и коэффициент K из паспорта сужающего устройства — получаем расход Q. Или наоборот: известный расход → требуемый перепад.</p>
+<div class="row3"><div><label>ΔP, кПа</label><input id="dp_dp" type="number" step="any"></div><div><label>Коэффициент K</label><input id="dp_k" type="number" step="any"></div><div><label>Расход Q, м³/ч (для обратного расчёта)</label><input id="dp_q" type="number" step="any"></div></div>
+<p class="res" id="dp_out"></p>
+<p class="hint">Модель Q = K·√ΔP. Коэффициент K должен быть получен из паспорта/градуировки конкретного сужающего устройства.</p>
+</div>
+<div class="card">
+<h2>Частота импульсов → расход</h2>
+<p class="sub">Что вводим: частоту импульсов счётчика (Гц) и число импульсов на 1 м³ (из паспорта счётчика). Что получаем: объёмный расход.</p>
+<div class="row"><div><label>Частота, Гц</label><input id="pu_f" type="number" step="any"></div><div><label>Импульсов на м³</label><input id="pu_k" type="number" step="any"></div></div>
+<p class="res" id="pu_out"></p>
+</div>
+<div class="card">
+<h2>Перевод расхода</h2>
+<p class="sub">Введите значение и единицу — получите перевод в остальные единицы объёмного расхода.</p>
+<div class="row"><div><label>Значение</label><input id="q_in" type="number" step="any"></div><div><label>Из единицы</label><select id="q_from"></select></div></div>
+<p class="res" id="q_out"></p>
+</div>
+<div class="card">
+<h2>Перевод массового расхода</h2>
+<p class="sub">Введите значение и единицу — получите перевод в остальные единицы массового расхода.</p>
+<div class="row"><div><label>Значение</label><input id="qm_in" type="number" step="any"></div><div><label>Из единицы</label><select id="qm_from"></select></div></div>
+<p class="res" id="qm_out"></p>
+</div>
+</div>
+
+<div class="page" id="page-elec">
+<div class="card">
+<h2>4–20 мА ↔ инженерное значение</h2>
+<p class="sub">Что вводим: измеренный ток (мА) и шкалу прибора — нижний (LRV) и верхний (URV) пределы. Что получаем: значение величины и процент шкалы. Или наоборот: значение величины → ток петли.</p>
+<div class="row3"><div><label>Ток, мА</label><input id="lp_i" type="number" step="any"></div><div><label>LRV</label><input id="lp_lrv" type="number" step="any" value="0"></div><div><label>URV</label><input id="lp_urv" type="number" step="any" value="100"></div></div>
+<p class="res" id="lp_out"></p>
+<div class="row"><div><label>Значение (обратный расчёт)</label><input id="lp_v" type="number" step="any"></div><div></div></div>
+<p class="res" id="lp_out2"></p>
+<div class="hint">Живой ноль: 4 мА = 0% шкалы, 20 мА = 100%. Формула: значение = LRV + (URV − LRV)·(I − 4)/16. Индикация NAMUR NE43 ориентировочная: 3,6–21 мА — рабочий диапазон, ниже 3,6 мА — обрыв петли, выше 21 мА — насыщение/авария. Учитывайте конфигурацию передатчика.</div>
+</div>
+<div class="card">
+<h2>Нагрузка токовой петли</h2>
+<p class="sub">Что вводим: напряжение питания петли (В), минимальное напряжение, требуемое датчику (из паспорта), падение на барьерах/кабеле (В) и максимальный ток петли (мА). Что получаем: максимально допустимое сопротивление нагрузки петли.</p>
+<div class="row3"><div><label>Питание, В</label><input id="ll_u" type="number" step="any" value="24"></div><div><label>Мин. напряжение датчика, В</label><input id="ll_umin" type="number" step="any" value="8"></div><div><label>Падение на барьерах, В</label><input id="ll_ud" type="number" step="any" value="0"></div></div>
+<div><label>Ток, мА</label><input id="ll_i" type="number" step="any" value="20"></div>
+<p class="res" id="ll_out"></p>
+</div>
+<div class="card">
+<h2>Закон Ома и мощность</h2>
+<p class="sub">Что вводим: напряжение (В) и сопротивление (Ом). Что получаем: ток (А) и мощность (Вт).</p>
+<div class="row"><div><label>Напряжение, В</label><input id="oh_u" type="number" step="any"></div><div><label>Сопротивление, Ом</label><input id="oh_r" type="number" step="any"></div></div>
+<p class="res" id="oh_out"></p>
+</div>
+<div class="card">
+<h2>Трёхфазная мощность</h2>
+<p class="sub">Что вводим: линейное напряжение (В), ток фазы (А) и cos φ. Что получаем: активную мощность (кВт).</p>
+<div class="row3"><div><label>Линейное напряжение, В</label><input id="3p_u" type="number" step="any" value="380"></div><div><label>Ток, А</label><input id="3p_i" type="number" step="any"></div><div><label>cos φ</label><input id="3p_c" type="number" step="any" value="1"></div></div>
+<p class="res" id="3p_out"></p>
+</div>
+<div class="card"><h2>Напряжение</h2><div id="g-u_volt"></div></div>
+<div class="card"><h2>Ток</h2><div id="g-u_amp"></div></div>
+<div class="card"><h2>Сопротивление</h2><div id="g-u_ohm"></div></div>
+</div>
+
+<div class="page" id="page-circ">
+<div class="card">
+<h2>Последовательное / параллельное соединение</h2>
+<p class="sub">Что вводим: тип элементов и значения через пробел или точку с запятой (десятичный разделитель — точка). Что получаем: оба соединения сразу.</p>
+<div class="row"><div><label>Тип элементов</label><select id="cn_type"><option>Резисторы (Ом)</option><option>Конденсаторы (мкФ)</option><option>Катушки (мГн)</option></select></div><div><label>Значения через пробел</label><input id="cn_v" placeholder="100 220 470"></div></div>
+<button class="act" onclick="connCalc()">Рассчитать</button>
+<p class="res" id="cn_out"></p>
+</div>
+<div class="card">
+<h2>Делитель напряжения</h2>
+<p class="sub">Что вводим: входное напряжение, R1 (верхнее плечо, к источнику питания) и R2 (нижнее плечо, к общему проводу), опционально нагрузку. Что получаем: выходное напряжение без нагрузки и под нагрузкой, ток и мощность на R2.</p>
+<div class="row3"><div><label>Uвх, В</label><input id="dv_u" type="number" step="any"></div><div><label>R1, Ом</label><input id="dv_r1" type="number" step="any"></div><div><label>R2, Ом</label><input id="dv_r2" type="number" step="any"></div></div>
+<div><label>Нагрузка Rн, Ом (0 = нет)</label><input id="dv_rn" type="number" step="any" value="0"></div>
+<p class="res" id="dv_out"></p>
+</div>
+<div class="card">
+<h2>Резистор светодиода</h2>
+<p class="sub">Что вводим: питание (В), прямое падение на LED (В) и ток (мА). Что получаем: сопротивление, ближайший номинал E24 и требуемую мощность резистора.</p>
+<div class="row3"><div><label>Питание, В</label><input id="led_u" type="number" step="any" value="12"></div><div><label>Падение на LED, В</label><input id="led_ud" type="number" step="any" value="2.2"></div><div><label>Ток, мА</label><input id="led_i" type="number" step="any" value="20"></div></div>
+<p class="res" id="led_out"></p>
+</div>
+<div class="card">
+<h2>RC-цепь</h2>
+<p class="sub">Что вводим: сопротивление (кОм) и ёмкость (мкФ). Что получаем: постоянную времени τ, время установления (3τ) и частоту среза.</p>
+<div class="row"><div><label>R, кОм</label><input id="rc_r" type="number" step="any"></div><div><label>C, мкФ</label><input id="rc_c" type="number" step="any"></div></div>
+<p class="res" id="rc_out"></p>
+</div>
+<div class="card">
+<h2>Падение напряжения на кабеле</h2>
+<p class="sub">Что вводим: материал, длину линии в одну сторону (м), сечение (мм²) и ток (А). Что получаем: сопротивление жил, падение напряжения и потери.</p>
+<div class="row3"><div><label>Материал</label><select id="cb_m"><option>Медь</option><option>Алюминий</option></select></div><div><label>Длина в одну сторону, м</label><input id="cb_l" type="number" step="any"></div><div><label>Сечение, мм²</label><input id="cb_s" type="number" step="any" value="1.5"></div></div>
+<div><label>Ток, А</label><input id="cb_i" type="number" step="any"></div>
+<p class="res" id="cb_out"></p>
+<p class="hint">Упрощённый расчёт по сопротивлению проводника при 20 °C; контакты и температурный коэффициент не учтены.</p>
+</div>
+<div class="card">
+<h2>Пороги триггера Шмитта (555 / компаратор)</h2>
+<p class="sub">Что вводим: напряжение питания (В) и пороги в делениях по 1/6 питания (для 555 обычно V+ = 4 деления, V− = 2). Что получаем: верхний и нижний пороги переключения и ширину гистерезиса.</p>
+<div class="row3"><div><label>Uпит, В</label><input id="sm_u" type="number" step="any" value="12"></div><div><label>V+, делений</label><input id="sm_v1" type="number" step="any" value="4"></div><div><label>V−, делений</label><input id="sm_v2" type="number" step="any" value="2"></div></div>
+<p class="res" id="sm_out"></p>
+</div>
+</div>
+
+<div class="page" id="page-codes">
+<div class="card">
+<h2>Определитель номиналов</h2>
+<p class="sub">Что вводим: тип компонента и маркировку с корпуса. Что получаем: расшифрованный номинал. Если код неоднозначен, показываются варианты — проверяйте даташит.</p>
+<div class="row"><div><label>Тип компонента</label><select id="cd_type"><option>Резистор SMD</option><option>Конденсатор</option><option>Катушка индуктивности</option></select></div><div><label>Маркировка</label><input id="cd_code" placeholder="472 / 4R7 / 01C"></div></div>
+<button class="act" onclick="decodeCode()">Определить номинал</button>
+<p class="res" id="cd_out"></p>
+<div class="hint">SMD-коды могут повторяться у разных производителей. Для EIA-96 требуется таблица кодов и буквенных множителей; неизвестные или неоднозначные обозначения не следует трактовать как достоверный номинал.</div>
+</div>
+<div class="card">
+<h2>Цветовая маркировка резисторов</h2>
+<p class="sub">Выберите цвета колец слева направо. Для 5-полосного резистора третье кольцо — цифра, для 4-полосного — множитель. Золотой и серебристый в позиции множителя и допуска.</p>
+<div class="row3"><div><label>1-е кольцо</label><select id="col1"></select></div><div><label>2-е кольцо</label><select id="col2"></select></div><div><label>3-е кольцо</label><select id="col3"></select></div></div>
+<div class="row"><div><label>Множитель (4-е кольцо)</label><select id="col_m"></select></div><div><label>Допуск</label><select id="col_t"></select></div></div>
+<button class="act" onclick="colorCalc()">Определить номинал</button>
+<p class="res" id="col_out"></p>
+<p id="col_bars" style="margin-top:8px"></p>
+<p class="hint">Если 3-е кольцо выбрано золотым или серебристым (множитель ×0,1 или ×0,01), расчёт идёт как 4-полосный: две цифры + множитель. Если 3-е кольцо — цифра (чёрный…белый), расчёт 5-полосный: три цифры + множитель.</p>
+</div>
+<button class="sec" onclick="e24Table()">Показать ряд E24</button>
+<div id="e24_out"></div>
+<div class="card">
+<h2>Быстрые примеры</h2>
+<table>
+<tr><th>Маркировка</th><th>Расшифровка</th></tr>
+<tr><td>472</td><td>4,7 кОм (резистор) / 4,7 нФ (конденсатор, 3-значный код в пФ)</td></tr>
+<tr><td>103</td><td>10 кОм / 10 нФ (зависит от типа)</td></tr>
+<tr><td>4R7</td><td>4,7 Ом</td></tr>
+<tr><td>R100</td><td>0,1 Ом</td></tr>
+<tr><td>104</td><td>100 нФ = 0,1 мкФ</td></tr>
+<tr><td>2R2</td><td>2,2 (единицы зависят от компонента)</td></tr>
+</table>
+</div>
+</div>
+
+<div class="page" id="page-metro">
+<div class="card">
+<h2>Погрешность измерения</h2>
+<p class="sub">Что вводим: измеренное и эталонное (действительное) значение, а также диапазон прибора. Что получаем: абсолютную, относительную и приведённую погрешность — как в протоколах поверки.</p>
+<div class="row"><div><label>Измеренное значение</label><input id="er_x" type="number" step="any"></div><div><label>Эталонное значение</label><input id="er_ref" type="number" step="any"></div></div>
+<div class="row"><div><label>Нижний предел диапазона</label><input id="er_lo" type="number" step="any" value="0"></div><div><label>Верхний предел диапазона</label><input id="er_hi" type="number" step="any" value="100"></div></div>
+<p class="res" id="er_out"></p>
+<p class="hint">Приведённая погрешность = абсолютная / (верх − низ диапазона) × 100%. Именно её нормирует класс точности для большинства приборов.</p>
+</div>
+<div class="card">
+<h2>Класс точности → предел основной погрешности</h2>
+<p class="sub">Что вводим: класс точности (%) и нормирующее значение (обычно диапазон прибора). Что получаем: предел допускаемой основной погрешности в единицах величины.</p>
+<div class="row"><div><label>Класс точности, %</label><input id="cl_c" type="number" step="any" value="0.5"></div><div><label>Нормирующее значение</label><input id="cl_n" type="number" step="any" value="100"></div></div>
+<p class="res" id="cl_out"></p>
+<p class="hint">Применимость формулы зависит от способа нормирования класса точности конкретного прибора и его стандарта.</p>
+</div>
+</div>
+
+<script>
+'use strict';
+var $=function(id){return document.getElementById(id)};
+function fmt(v){if(v===null||v===undefined||!isFinite(v))return'—';var a=Math.abs(v);if(a!==0&&(a<1e-6||a>=1e9))return v.toExponential(4);if(v>=100)return v.toFixed(1);if(v>=10)return v.toFixed(2);if(v>=1)return v.toFixed(3);return v.toFixed(5)}
+function num(id){var e=$(id);if(!e)return null;var x=parseFloat(String(e.value).replace(',','.'));return isNaN(x)?null:x}
+function set(id,txt){var e=$(id);if(e)e.textContent=txt}
+
+var NAV=[['home','Главная','⌂'],['pressure','Давление','◉'],['temp','Темп.','♨'],['flow','Расход','⇢'],['elec','Электрика','ϟ'],['circ','Цепи','⌁'],['codes','Номиналы','▦'],['metro','Метрология','✓']];
+function buildNav(){var n=$('nav');NAV.forEach(function(t){var b=document.createElement('button');b.id='tab-'+t[0];b.innerHTML='<span class="ico">'+t[2]+'</span>'+t[1];b.onclick=function(){showTab(t[0])};n.appendChild(b)})}
+function showTab(id){document.querySelectorAll('.page').forEach(function(p){p.classList.toggle('active',p.id==='page-'+id)});NAV.forEach(function(t){$('tab-'+t[0]).classList.toggle('active',t[0]===id)});window.scrollTo(0,0)}
+
+var P_UN={'Па':1,'кПа':1e3,'МПа':1e6,'бар':1e5,'мбар':100,'атм':101325,'мм рт. ст.':133.322,'мм вод. ст.':9.80665,'кгс/см²':98066.5,'psi':6894.76,'inHg':3386.39,'inH₂O':249.089};
+function fillSel(sel,obj){var s=$(sel);Object.keys(obj).forEach(function(k){var o=document.createElement('option');o.textContent=k;s.appendChild(o)})}
+function convAll(units,val,from){return Object.keys(units).filter(function(u){return u!==from}).map(function(u){return fmt(val/units[u])+' '+u}).join(' · ')}
+function bindConv(id,units){function go(){var v=num(id+'-in'),f=$(id+'-from').value;if(v===null){set(id+'-out','');return}set(id+'-out','= '+convAll(units,v,f))}[id+'-in',id+'-from'].forEach(function(x){$(x).addEventListener('input',go);$(x).addEventListener('change',go)})}
+function convBlock(id,title,units){var opts='';Object.keys(units).forEach(function(k){opts+='<option>'+k+'</option>'});return '<div class="row"><div><label>Значение</label><input id="'+id+'-in" type="number" step="any"></div><div><label>Из единицы</label><select id="'+id+'-from">'+opts+'</select></div></div><p class="res" id="'+id+'-out"></p>'}
+
+fillSel('p_from',P_UN);bindConv('p',P_UN);
+
+function toC(v,u){if(u==='°F')return(v-32)*5/9;if(u==='K')return v-273.15;if(u==='°R')return(v-491.67)*5/9;return v}
+function tConv(){var v=num('t_in');if(v===null){set('t_out','');return}var c=toC(v,$('t_from').value);set('t_out','= '+fmt(c)+' °C = '+fmt(c*9/5+32)+' °F = '+fmt(c+273.15)+' K = '+fmt((c+273.15)*1.8)+' °R')}
+['t_in','t_from'].forEach(function(id){$(id).addEventListener('input',tConv);$(id).addEventListener('change',tConv)});
+
+function rPt(t,n){var A=3.9083e-3,B=-5.775e-7;if(t>=0)return n*(1+A*t+B*t*t);var C=-4.183e-12;return n*(1+A*t+B*t*t+C*(t-100)*t*t*t)}
+function tPt(r,n){var lo=-200,hi=850;for(var i=0;i<80;i++){var m=(lo+hi)/2;if(rPt(m,n)<r)lo=m;else hi=m}return(lo+hi)/2}
+function ptCalc(){var n=parseFloat($('pt_n').value),t=num('pt_t'),r=num('pt_r');if(t!==null)set('pt_out','R = '+fmt(rPt(t,n))+' Ом');else set('pt_out','');if(r!==null)set('pt_out2','t = '+fmt(tPt(r,n))+' °C');else set('pt_out2','')}
+['pt_t','pt_n','pt_r'].forEach(function(id){$(id).addEventListener('input',ptCalc);$(id).addEventListener('change',ptCalc)});
+
+var TCK={K:{lo:-1.941,hi:37.326,tlo:-50,thi:900},J:{lo:-2.431,hi:42.915,tlo:-50,thi:750}};
+function tcType(){return $('tc_type').value.charAt(0)}
+function tcCalc(){var tp=tcType(),t=num('tc_t'),mv=num('tc_mv'),d=TCK[tp];if(t!==null){var e=d.lo+(d.hi-d.lo)*(t-d.tlo)/(d.thi-d.tlo);set('tc_out','ЭДС ≈ '+fmt(e)+' мВ')}else set('tc_out','');
+if(mv!==null){if(mv<d.lo||mv>d.hi){set('tc_out2','вне диапазона приближения ('+d.tlo+'…'+d.thi+' °C)')}else{var lo=d.tlo,hi2=d.thi;for(var i=0;i<80;i++){var m=(lo+hi2)/2;if(d.lo+(d.hi-d.lo)*(m-d.tlo)/(d.thi-d.tlo)<mv)lo=m;else hi2=m}set('tc_out2','t ≈ '+fmt((lo+hi2)/2)+' °C')}}else set('tc_out2','')}
+['tc_t','tc_mv','tc_type'].forEach(function(id){$(id).addEventListener('input',tcCalc);$(id).addEventListener('change',tcCalc)});
+
+function mosCalc(){var r=num('mos_r'),r2=num('mos_r2'),r3=num('mos_r3'),u=num('mos_u');if(r===null||r2===null||r3===null||u===null){set('mos_out','');return}var uo=u*r/(r+r2);set('mos_out','Разбаланс моста ≈ '+fmt(uo*r3/(r3+r)-uo)+' В')}
+['mos_r','mos_r2','mos_r3','mos_u'].forEach(function(id){$(id).addEventListener('input',mosCalc)});
+
+function lvCalc(){var dp=num('lv_dp'),rho=num('lv_rho'),g=num('lv_g');if(dp===null||rho===null||g===null||rho<=0||g<=0){set('lv_out','');return}var h=dp*1000/(rho*g);set('lv_out','h = '+fmt(h)+' м = '+fmt(h*100)+' см')}
+['lv_dp','lv_rho','lv_g'].forEach(function(id){$(id).addEventListener('input',lvCalc)});
+
+function dpCalc(){var dp=num('dp_dp'),k=num('dp_k'),q=num('dp_q');var s='';if(dp!==null&&k!==null&&dp>=0){var qv=k*Math.sqrt(dp);s='Q = '+fmt(qv)+' м³/ч = '+fmt(qv*1000/60)+' л/мин'}if(q!==null&&k!==null&&k>0&&q>=0){if(s)s+='\n';s+='ΔP = '+fmt((q/k)*(q/k))+' кПа'}set('dp_out',s)}
+['dp_dp','dp_k','dp_q'].forEach(function(id){$(id).addEventListener('input',dpCalc)});
+
+function puCalc(){var f=num('pu_f'),k=num('pu_k');if(f===null||k===null||k<=0){set('pu_out','');return}var q=f/k;set('pu_out','Q = '+fmt(q)+' м³/с = '+fmt(q*3600)+' м³/ч')}
+['pu_f','pu_k'].forEach(function(id){$(id).addEventListener('input',puCalc)});
+
+var Q_UN={'м³/ч':1,'м³/с':3600,'л/с':3.6,'л/мин':0.06,'галлон США/мин':0.227125,'фут³/ч':0.0283168,'баррель/сутки':0.00662447};
+fillSel('q_from',Q_UN);bindConv('q',Q_UN);
+var QM_UN={'кг/ч':1,'кг/с':3600,'г/с':3.6,'т/ч':1000,'фунт/ч':0.453592,'фунт/мин':27.2155};
+fillSel('qm_from',QM_UN);bindConv('qm',QM_UN);
+
+function loopCalc(){var i=num('lp_i'),l=num('lp_lrv'),u=num('lp_urv');if(i!==null&&l!==null&&u!==null&&u!==l){var pct=(i-4)/16*100;var val=l+(u-l)*pct/100;var s='Значение = '+fmt(val)+' ('+fmt(pct)+' % шкалы)';if(i<3.6)s+='\n⚠ Ниже 3,6 мА — обрыв петли (NE43)';else if(i>21)s+='\n⚠ Выше 21 мА — насыщение/авария (NE43)';set('lp_out',s)}else set('lp_out','');
+var v=num('lp_v');if(v!==null&&l!==null&&u!==null&&u!==l)set('lp_out2','I = '+fmt(4+16*(v-l)/(u-l))+' мА');else set('lp_out2','')}
+['lp_i','lp_lrv','lp_urv','lp_v'].forEach(function(id){$(id).addEventListener('input',loopCalc)});
+
+function llCalc(){var u=num('ll_u'),umin=num('ll_umin'),ud=num('ll_ud'),i=num('ll_i');if(u===null||umin===null||ud===null||i===null||i<=0){set('ll_out','');return}var r=(u-umin-ud)/(i/1000);set('ll_out','R макс = '+fmt(r)+' Ом = '+fmt(r/1000)+' кОм')}
+['ll_u','ll_umin','ll_ud','ll_i'].forEach(function(id){$(id).addEventListener('input',llCalc)});
+
+function ohmCalc(){var u=num('oh_u'),r=num('oh_r');if(u===null||r===null||r===0){set('oh_out','');return}var i=u/r;set('oh_out','I = '+fmt(i)+' А;  P = '+fmt(u*i)+' Вт')}
+['oh_u','oh_r'].forEach(function(id){$(id).addEventListener('input',ohmCalc)});
+
+function ph3Calc(){var u=num('3p_u'),i=num('3p_i'),c=num('3p_c');if(u===null||i===null||c===null){set('3p_out','');return}set('3p_out','P = '+fmt(Math.sqrt(3)*u*i*c/1000)+' кВт')}
+['3p_u','3p_i','3p_c'].forEach(function(id){$(id).addEventListener('input',ph3Calc)});
+
+function connCalc(){var t=$('cn_type').value,raw=$('cn_v').value.trim();if(!raw){set('cn_out','Введите значения');return}var arr=raw.split(/[;\s]+/).map(parseFloat);if(arr.some(isNaN)){set('cn_out','Ошибка: проверьте значения (десятичный разделитель — точка)');return}var s=0,p=0;arr.forEach(function(v){s+=v;p+=1/v});var par=1/p,cap=t.indexOf('Конденсаторы')===0;
+var unit=cap?'мкФ':(t.indexOf('мГн')>0?'мГн':'Ом');
+var line1=cap?('C параллельно = '+fmt(s)+' '+unit):('R последовательное = '+fmt(s)+' '+unit);
+var line2=cap?('C последовательно = '+fmt(par)+' '+unit):('R параллельное = '+fmt(par)+' '+unit);
+set('cn_out',line1+'\n'+line2+(cap?'\n(у конденсаторов всё наоборот: параллельно — складываются)':'\n(катушки соединяются как резисторы; взаимная индукция не учтена)'))}
+
+function divCalc(){var u=num('dv_u'),r1=num('dv_r1'),r2=num('dv_r2'),rn=num('dv_rn');if(u===null||r1===null||r2===null||r1+r2===0){set('dv_out','');return}var uo=u*r2/(r1+r2),i=u/(r1+r2),s='Uвых = '+fmt(uo)+' В';if(rn&&rn>0){var r2p=r2*rn/(r2+rn);var uo2=u*r2p/(r1+r2p);s+='\nUвых под нагрузкой = '+fmt(uo2)+' В (просадка '+fmt((uo-uo2)/uo*100)+' %)'}s+='\nТок делителя = '+fmt(i*1000)+' мА;  P на R2 = '+fmt(r2*i*i)+' Вт';set('dv_out',s)}
+['dv_u','dv_r1','dv_r2','dv_rn'].forEach(function(id){$(id).addEventListener('input',divCalc)});
+
+var E24=[10,11,12,13,15,16,18,20,22,24,27,30,33,36,39,43,47,51,56,62,68,75,82,91];
+function e24Near(v){var best=E24[0],bd=1e18;[0.1,1,10,100,1000,1e4,1e5,1e6].forEach(function(m){E24.forEach(function(e){var x=e*m,d=Math.abs(x-v);if(d<bd){bd=d;best=x}})});return best}
+function ledCalc(){var uf=num('led_u'),ud=num('led_ud'),i=num('led_i');if(uf===null||ud===null||i===null||i<=0){set('led_out','');return}var r=(uf-ud)/(i/1000);if(r<0){set('led_out','Падение на LED больше питания — проверьте исходные данные');return}var e=e24Near(r);set('led_out','R = '+fmt(r)+' Ом → ближайший E24: '+fmt(e)+' Ом\nМощность резистора: '+fmt((uf-ud)*i/1000)+' Вт → берите с запасом ×2')}
+['led_u','led_ud','led_i'].forEach(function(id){$(id).addEventListener('input',ledCalc)});
+
+function rcCalc(){var r=num('rc_r'),c=num('rc_c');if(r===null||c===null){set('rc_out','');return}var tau=r*c/1000;set('rc_out','τ = '+fmt(tau*1000)+' мс = '+fmt(tau)+' с\nУстановление 3τ ≈ '+fmt(tau*3)+' с;  f среза = '+fmt(1/(2*Math.PI*tau))+' Гц')}
+['rc_r','rc_c'].forEach(function(id){$(id).addEventListener('input',rcCalc)});
+
+function cbCalc(){var m=$('cb_m').value==='Медь'?0.0175:0.028,l=num('cb_l'),s=num('cb_s'),i=num('cb_i');if(l===null||s===null||s<=0||i===null){set('cb_out','');return}var r=2*m*l/s,du=i*r;set('cb_out','R кабеля (туда-обратно) = '+fmt(r)+' Ом\nΔU = '+fmt(du)+' В')}
+['cb_m','cb_l','cb_s','cb_i'].forEach(function(id){$(id).addEventListener('input',cbCalc);$(id).addEventListener('change',cbCalc)});
+
+function smCalc(){var u=num('sm_u'),v1=num('sm_v1'),v2=num('sm_v2');if(u===null||v1===null||v2===null){set('sm_out','');return}var d=u/6;set('sm_out','V+ = '+fmt(d*v1)+' В;  V− = '+fmt(d*v2)+' В;  гистерезис = '+fmt(d*(v1-v2))+' В')}
+['sm_u','sm_v1','sm_v2'].forEach(function(id){$(id).addEventListener('input',smCalc)});
+
+var E96=[100,102,105,107,110,113,115,118,121,124,127,130,133,137,140,143,147,150,154,158,162,165,169,174,178,182,187,191,196,200,205,210,215,221,226,232,237,243,249,255,261,267,274,280,287,294,301,309,316,324,332,340,348,357,365,374,383,392,402,412,422,432,442,453,464,475,487,499,511,523,536,549,562,576,590,604,619,634,649,665,681,698,715,732,750,768,787,806,825,845,866,887,909,931,953,976];
+var EIA_MULT={A:1,B:10,C:100,D:1000,E:10000,F:100000,H:0.01,X:0.1,Y:0.01,Z:0.001};
+function ohm3(v){if(v>=1e6)return fmt(v/1e6)+' МОм';if(v>=1000)return fmt(v/1000)+' кОм';return fmt(v)+' Ом'}
+function capF(v){if(v>=1e6)return fmt(v/1e6)+' Ф';if(v>=1000)return fmt(v/1000)+' мкФ';if(v>=1)return fmt(v)+' нФ';return fmt(v*1000)+' пФ'}
+function decUnit(v,base){if(base==='pF')return capF(v);if(base==='uH'){if(v>=1e6)return fmt(v/1e6)+' Гн';if(v>=1000)return fmt(v/1000)+' мГн';return fmt(v)+' мкГн'}return ohm3(v)}
+var TOLMAP={J:'±5%',K:'±10%',M:'±20%'};
+function decodeCode(){var t=$('cd_type').value,code=$('cd_code').value.toUpperCase().replace(/\s/g,'');if(!code){set('cd_out','Введите маркировку');return}var base=t==='Конденсатор'?'pF':(t==='Катушка индуктивности'?'uH':'ohm');var out='';var tol='';
+var mR=code.match(/^(\d*)R(\d+)$/);
+var m3d=code.match(/^(\d{3})([JKM])?$/);
+var m4d=code.match(/^(\d{4})$/);
+var mE=code.match(/^(\d{2})([ABCDEFGHXYZ])$/);
+if(mR){out=decUnit(parseFloat(mR[1]+'.'+mR[2]),base)}
+else if(m3d){var v=parseInt(m3d[1].slice(0,2),10)*Math.pow(10,parseInt(m3d[1].charAt(2),10));out=decUnit(v,base);if(m3d[2])tol=TOLMAP[m3d[2]]||''}
+else if(m4d){var v4=parseInt(m4d[1].slice(0,3),10)*Math.pow(10,parseInt(m4d[1].charAt(3),10));out=decUnit(v4,base)}
+else if(mE&&base==='ohm'&&E96[parseInt(mE[1],10)-1]){out=ohm3(E96[parseInt(mE[1],10)-1]*EIA_MULT[mE[2]])+' (EIA-96)'}
+else{out='Не распознано — сверьте с даташитом'}
+if(tol)out+='  ('+tol+')';set('cd_out',out)}
+
+var COLORS=[['Чёрный (0)',0,'#000'],['Коричневый (1)',1,'#7a4a1f'],['Красный (2)',2,'#d32f2f'],['Оранжевый (3)',3,'#f57c00'],['Жёлтый (4)',4,'#f9a825'],['Зелёный (5)',5,'#2e7d32'],['Синий (6)',6,'#1565c0'],['Фиолетовый (7)',7,'#6a1b9a'],['Серый (8)',8,'#616161'],['Белый (9)',9,'#e0e0e0']];
+var MULTS=[['×0,1 — золотой',0.1,'#c9a227'],['×1 — чёрный',1,'#000'],['×10 — коричневый',10,'#7a4a1f'],['×100 — красный',100,'#d32f2f'],['×1k — оранжевый',1000,'#f57c00'],['×10k — жёлтый',10000,'#f9a825'],['×100k — зелёный',100000,'#2e7d32'],['×1M — синий',1000000,'#1565c0'],['×0,01 — серебристый',0.01,'#b8b8b8']];
+var TOLS=[['Золотой ±5%','#c9a227'],['Серебристый ±10%','#b8b8b8'],['Коричневый ±1%','#7a4a1f'],['Красный ±2%','#d32f2f'],['Без кольца ±20%','#ffffff']];
+function fillCol(sel,arr){var s=$(sel);arr.forEach(function(c){var o=document.createElement('option');o.textContent=c[0];o.value=c[1];s.appendChild(o)})}
+fillCol('col1',COLORS);fillCol('col2',COLORS);fillCol('col3',COLORS);fillCol('col_m',MULTS);fillCol('col_t',TOLS);
+function colorCalc(){var i1=$('col1').selectedIndex,i2=$('col2').selectedIndex,i3=$('col3').selectedIndex,im=$('col_m').selectedIndex,it=$('col_t').selectedIndex;
+var d1=COLORS[i1][1],d2=COLORS[i2][1],d3=COLORS[i3][1],m=MULTS[im][1];
+var is5=(d3<10);var mant=is5?(d1*100+d2*10+d3):(d1*10+d2);var r=mant*m;set('col_out','R = '+ohm3(r)+', допуск '+TOLS[it][0]);
+var bars=is5?[COLORS[i1],COLORS[i2],COLORS[i3],MULTS[im],TOLS[it]]:[COLORS[i1],COLORS[i2],MULTS[im],TOLS[it]];
+var h='';bars.forEach(function(c){h+='<span class="bar" style="background:'+c[2]+'"></span>'});$('col_bars').innerHTML=h}
+function e24Table(){var s='Ряд E24 (множитель ×0,1 Ом … ×1 МОм):\n'+E24.join(' · ');set('e24_out','<div class="hint" style="white-space:pre-wrap">'+s+'</div>')}
+
+function errCalc(){var x=num('er_x'),ref=num('er_ref'),lo=num('er_lo'),hi=num('er_hi');if(x===null||ref===null){set('er_out','');return}var ab=x-ref;var s='Абсолютная Δ = '+fmt(ab);if(ref!==0)s+='\nОтносительная δ = '+fmt(ab/ref*100)+' %';if(hi!==null&&lo!==null&&hi>lo)s+='\nПриведённая γ = '+fmt(ab/(hi-lo)*100)+' %';set('er_out',s)}
+['er_x','er_ref','er_lo','er_hi'].forEach(function(id){$(id).addEventListener('input',errCalc)});
+
+function clCalc(){var c=num('cl_c'),n=num('cl_n');if(c===null||n===null){set('cl_out','');return}set('cl_out','Предел основной погрешности = ±'+fmt(c/100*n))}
+['cl_c','cl_n'].forEach(function(id){$(id).addEventListener('input',clCalc)});
+
+var U_CONV=[['u_volt','Напряжение',{'мкВ':1e-6,'мВ':0.001,'В':1,'кВ':1000}],['u_amp','Ток',{'мкА':1e-6,'мА':0.001,'А':1}],['u_ohm','Сопротивление',{'мОм':0.001,'Ом':1,'кОм':1000,'МОм':1e6}],['u_freq','Частота',{'Гц':1,'кГц':1000,'МГц':1e6,'об/мин':1/60}],['u_len','Длина',{'мм':0.001,'см':0.01,'м':1,'км':1000,'дюйм':0.0254,'фут':0.3048}],['u_mass','Масса',{'мг':1e-6,'г':0.001,'кг':1,'т':1000,'фунт':0.453592,'унция':0.0283495}],['u_vol','Объём',{'мл':0.001,'л':1,'м³':1000,'галлон США':3.78541,'баррель':158.987}],['u_dens','Плотность',{'кг/м³':1,'г/см³':1000,'фунт/фут³':16.0185}]];
+U_CONV.forEach(function(c){$('g-'+c[0]).innerHTML=convBlock(c[0],c[1],c[2]);bindConv(c[0],c[2])});
+
+buildNav();
+</script>
+</body>
+</html>
